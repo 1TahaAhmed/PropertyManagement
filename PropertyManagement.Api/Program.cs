@@ -2,7 +2,6 @@ using PropertyManagement.Api.Extensions;
 using PropertyManagement.Api.Middleware;
 using PropertyManagement.Application.Common;
 using PropertyManagement.Infrastructure;
-using PropertyManagement.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 builder.Services.AddProblemDetails();
 
@@ -25,7 +24,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseExceptionHandler();
@@ -33,8 +33,6 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseRouting();
-
-app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
