@@ -1,4 +1,5 @@
 using PropertyManagement.Api.Extensions;
+using PropertyManagement.Api.Middleware;
 using PropertyManagement.Application.Common;
 using PropertyManagement.Infrastructure;
 using PropertyManagement.Infrastructure.Persistence;
@@ -11,6 +12,10 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+builder.Services.AddProblemDetails();
+
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApi();
@@ -22,6 +27,12 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseExceptionHandler();
+
+app.UseHttpsRedirection();
+
+app.UseRouting();
 
 app.UseHttpsRedirection();
 
