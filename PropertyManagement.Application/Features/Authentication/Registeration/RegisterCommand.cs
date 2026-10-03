@@ -1,9 +1,7 @@
-﻿using PropertyManagement.Application.Common.Results;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MediatR;
+using PropertyManagement.Application.Common.Results;
 
-namespace PropertyManagement.Application.Features.Authentication.Register
+namespace PropertyManagement.Application.Features.Authentication.Registeration
 {
     public sealed record RegisterCommand(
         string FirstName,
@@ -12,5 +10,5 @@ namespace PropertyManagement.Application.Features.Authentication.Register
         string Email,
         string Password,
         string ConfirmPassword
-    );
+    ) : IRequest<Result<RegisterResponse>>;
 }

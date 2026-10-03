@@ -1,5 +1,5 @@
 ﻿using FluentValidation;
-using PropertyManagement.Application.Features.Authentication.Register;
+using PropertyManagement.Application.Features.Authentication.Registeration;
 
 namespace PropertyManagement.Application.Validators.Authentication;
 

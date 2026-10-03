@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace PropertyManagement.Application.Features.Authentication.Registeration;
 
-namespace PropertyManagement.Application.Features.Authentication.Registeration
-{
-    public class RegisterResponse
-    {
-    }
-}
+public sealed record RegisterResponse(
+    string UserId,
+    string Email,
+    string FirstName,
+    string LastName,
+    bool EmailConfirmed,
+    DateTime CreatedAt);
