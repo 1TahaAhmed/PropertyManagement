@@ -4,7 +4,11 @@ using System.Text;
 
 namespace PropertyManagement.Application.Common.Results
 {
-    internal class Error
-    {
-    }
+    public sealed record Error
+    (
+        string Code,
+        string Message,
+        string? PropertyName = null
+
+    );
 }
