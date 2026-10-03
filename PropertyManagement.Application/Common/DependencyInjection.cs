@@ -1,4 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentValidation;
+using MediatR;
+using Microsoft.Extensions.DependencyInjection;
+using PropertyManagement.Application.Common.Behaviors;
+using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Authentication.Registeration;
 using System.Security.Cryptography.X509Certificates;
 
 namespace PropertyManagement.Application.Common
@@ -14,6 +19,13 @@ namespace PropertyManagement.Application.Common
                     typeof(DependencyInjection).Assembly);
 
             });
+
+            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+
+            services.AddTransient<
+                IPipelineBehavior<RegisterCommand, Result<RegisterResponse>>,
+                ValidationBehavior<RegisterCommand, RegisterResponse>>();
+
 
             return services;
         }

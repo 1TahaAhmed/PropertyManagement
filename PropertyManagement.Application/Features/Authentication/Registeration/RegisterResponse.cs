@@ -1,7 +1,7 @@
 ﻿namespace PropertyManagement.Application.Features.Authentication.Registeration;
 
 public sealed record RegisterResponse(
-    string UserId,
+    Guid UserId,
     string Email,
     string FirstName,
     string LastName,

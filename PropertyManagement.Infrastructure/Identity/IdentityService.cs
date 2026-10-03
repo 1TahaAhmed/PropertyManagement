@@ -11,7 +11,7 @@ namespace PropertyManagement.Infrastructure.Identity
         UserManager<ApplicationUser> userManager
         ) : IIdentityService
     {
-        public async Task<Result<string>> RegisterAsync(
+        public async Task<Result<Guid>> RegisterAsync(
             string firstName,
             string lastName,
             string address,
@@ -33,7 +33,7 @@ namespace PropertyManagement.Infrastructure.Identity
 
             if (identityResult.Succeeded)
             {
-                return Result<string>.Success(user.Id);
+                return Result<Guid>.Success(user.Id);
             }
 
             var errors = identityResult.Errors
@@ -42,7 +42,7 @@ namespace PropertyManagement.Infrastructure.Identity
                     Message: error.Description
                 ))
                 .ToArray();
-            return Result<string>.Failure(errors);
+            return Result<Guid>.Failure(errors);
         }
     }
 }

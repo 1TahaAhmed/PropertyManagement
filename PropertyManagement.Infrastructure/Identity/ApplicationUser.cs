@@ -2,7 +2,7 @@
 
 namespace PropertyManagement.Infrastructure.Identity;
 
-public class ApplicationUser : IdentityUser
+public class ApplicationUser : IdentityUser<Guid>
 {
     protected ApplicationUser()
     {
