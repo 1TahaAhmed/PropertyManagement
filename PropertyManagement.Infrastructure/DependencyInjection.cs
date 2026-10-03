@@ -35,12 +35,11 @@ namespace PropertyManagement.Infrastructure
                 options.Lockout.AllowedForNewUsers = true;
 
                 options.User.RequireUniqueEmail = true;
-            
+
                 options.SignIn.RequireConfirmedEmail = true;
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
-
 
             return services;
         }
