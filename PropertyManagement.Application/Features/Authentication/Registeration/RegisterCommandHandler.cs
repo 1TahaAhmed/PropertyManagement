@@ -1,5 +1,4 @@
 ﻿using MediatR;
-using Microsoft.AspNetCore.Identity;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Common.Results;
 

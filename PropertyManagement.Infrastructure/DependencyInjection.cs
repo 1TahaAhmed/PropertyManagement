@@ -39,7 +39,7 @@ namespace PropertyManagement.Infrastructure
 
                 options.SignIn.RequireConfirmedEmail = true;
             })
-            .AddRoles<IdentityRole>()
+            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
             services.AddScoped<IIdentityService, IdentityService>();

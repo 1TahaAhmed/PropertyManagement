@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using PropertyManagement.Application.Common.Behaviors;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Authentication.Registeration;
-using System.Security.Cryptography.X509Certificates;
 
 namespace PropertyManagement.Application.Common
 {
