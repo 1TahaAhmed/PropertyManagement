@@ -21,9 +21,9 @@ namespace PropertyManagement.Application.Common
 
             services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-            services.AddTransient<
-                IPipelineBehavior<RegisterCommand, Result<RegisterResponse>>,
-                ValidationBehavior<RegisterCommand, RegisterResponse>>();
+            services.AddTransient(
+                typeof(IPipelineBehavior<,>),
+                typeof(ValidationBehavior<,>));
 
 
             return services;

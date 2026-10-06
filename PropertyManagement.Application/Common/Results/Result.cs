@@ -4,7 +4,7 @@ using System.Text;
 
 namespace PropertyManagement.Application.Common.Results
 {
-    public class Result
+    public class Result : IResult<Result>
     {
         private Result(bool isSuccess, IReadOnlyCollection<Error> errors)
         {
@@ -39,7 +39,7 @@ namespace PropertyManagement.Application.Common.Results
         }
     }
 
-    public sealed class Result<T> 
+    public sealed class Result<T> : IResult<Result<T>>
     {
         private readonly T? _value;
 

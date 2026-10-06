@@ -7,12 +7,13 @@ namespace PropertyManagement.Application.Common.Behaviors;
 
 public sealed class ValidationBehavior<TRequest, TResponse>(
     IEnumerable<IValidator<TRequest>> validators)
-    : IPipelineBehavior<TRequest, Result<TResponse>>
+    : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
+    where TResponse : IResult<TResponse>
 {
-    public async Task<Result<TResponse>> Handle(
+    public async Task<TResponse> Handle(
         TRequest request,
-        RequestHandlerDelegate<Result<TResponse>> next,
+        RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
         if (!validators.Any())
@@ -36,11 +37,8 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
                 Type: ErrorType.Validation))
             .ToArray();
 
-        if (errors.Length > 0)
-        {
-            return Result<TResponse>.Failure(errors);
-        }
-
-        return await next(cancellationToken);
+        return errors.Length > 0
+            ? TResponse.Failure(errors)
+            : await next(cancellationToken);
     }
 }

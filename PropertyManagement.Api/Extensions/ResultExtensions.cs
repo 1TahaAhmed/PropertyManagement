@@ -18,9 +18,10 @@ public static class ResultExtensions
         var statusCode = result.Errors
             .Select(error => error.Type)
             .Distinct()
+            .OrderBy(GetErrorPriority)
             .Select(GetStatusCode)
-            .OrderByDescending(statusCode => statusCode)
             .First();
+
 
         return new ObjectResult(new
         {
@@ -30,6 +31,21 @@ public static class ResultExtensions
             StatusCode = statusCode
         };
     }
+
+    private static int GetErrorPriority(ErrorType errorType)
+    {
+        return errorType switch
+        {
+            ErrorType.Unauthorized => 0,
+            ErrorType.Forbidden => 1,
+            ErrorType.NotFound => 2,
+            ErrorType.Conflict => 3,
+            ErrorType.Validation => 4,
+            ErrorType.Failure => 5,
+            _ => 6
+        };
+    }
+
 
     private static int GetStatusCode(ErrorType errorType)
     {
