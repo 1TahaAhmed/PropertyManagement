@@ -5,6 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
+using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Infrastructure.Common.Time;
 
 namespace PropertyManagement.Infrastructure
 {
@@ -22,6 +24,8 @@ namespace PropertyManagement.Infrastructure
             (
                 options => options.UseSqlServer(connectionString)
             );
+
+            services.AddSingleton<IClock, SystemClock>();
 
             services.AddIdentityCore<ApplicationUser>(options =>
             {

@@ -24,12 +24,12 @@ namespace PropertyManagement.Application.Features.Authentication.Registeration
             }
 
             var response = new RegisterResponse(
-                UserId: identityResult.Value,
+                UserId: identityResult.Value.UserId,
                 Email: request.Email,
                 FirstName: request.FirstName,
                 LastName: request.LastName,
                 EmailConfirmed: false,
-                CreatedAt: DateTime.UtcNow
+                CreatedAt: identityResult.Value.CreatedAt
             );
 
             return Result<RegisterResponse>.Success(response);

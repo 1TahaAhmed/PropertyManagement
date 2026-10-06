@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PropertyManagement.Application.Common.Enums;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -8,7 +9,7 @@ namespace PropertyManagement.Application.Common.Results
     (
         string Code,
         string Message,
-        string? PropertyName = null
-
+        string? PropertyName = null,
+        ErrorType Type = ErrorType.Failure
     );
 }

@@ -12,14 +12,15 @@ public class ApplicationUser : IdentityUser<Guid>
         string firstName,
         string lastName,
         string address,
-        string email)
+        string email,
+        DateTime createdAt)
     {
         FirstName = firstName;
         LastName = lastName;
         Address = address;
         Email = email;
         UserName = email;
-        CreatedAt = DateTime.UtcNow;
+        CreatedAt = createdAt;
     }
 
     public string FirstName { get; private set; } = string.Empty;
@@ -31,7 +32,8 @@ public class ApplicationUser : IdentityUser<Guid>
         string firstName,
         string lastName,
         string address,
-        string email)
+        string email,
+        DateTime createdAt)
     {
         ArgumentException.ThrowIfNullOrEmpty(firstName);
         ArgumentException.ThrowIfNullOrEmpty(lastName);
@@ -41,7 +43,8 @@ public class ApplicationUser : IdentityUser<Guid>
             firstName.Trim(),
             lastName.Trim(),
             address?.Trim() ?? string.Empty,
-            email.Trim().ToLowerInvariant());
+            email.Trim().ToLowerInvariant(),
+            createdAt);
     }
 
     public void UpdateProfile(string firstName, string lastName, string address)

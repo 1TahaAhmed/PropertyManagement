@@ -7,7 +7,7 @@ namespace PropertyManagement.Application.Abstractions.Identity
 {
     public interface IIdentityService
     {
-        Task<Result<Guid>> RegisterAsync(
+        Task<Result<IdentityUserResult>> RegisterAsync(
             string firstName,
             string lastName,
             string address,

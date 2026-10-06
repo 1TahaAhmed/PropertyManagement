@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using MediatR;
+using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 
 namespace PropertyManagement.Application.Common.Behaviors;
@@ -31,7 +32,8 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
             .Select(failure => new Error(
                 Code: $"Validation.{failure.ErrorCode}",
                 Message: failure.ErrorMessage,
-                PropertyName: failure.PropertyName))
+                PropertyName: failure.PropertyName,
+                Type: ErrorType.Validation))
             .ToArray();
 
         if (errors.Length > 0)
