@@ -1,8 +1,11 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using PropertyManagement.Api.Contracts.Authentication;
+using ApiRegisterResponse =
+    PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
 using PropertyManagement.Api.Extensions;
 using PropertyManagement.Application.Features.Authentication.Registeration;
+using PropertyManagement.Api.Contracts.Authentication;
+
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -12,7 +15,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
 {
     [HttpPost("register")]
     [ProducesResponseType(
-        typeof(RegisterResponse),
+        typeof(ApiRegisterResponse),
         StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -37,8 +40,16 @@ public sealed class AuthController(ISender sender) : ControllerBase
             return this.ToActionResult(result);
         }
 
+        var response = new ApiRegisterResponse(
+            UserId: result.Value.UserId,
+            Email: result.Value.Email,
+            FirstName: result.Value.FirstName,
+            LastName: result.Value.LastName,
+            EmailConfirmed: result.Value.EmailConfirmed,
+            CreatedAt: result.Value.CreatedAt);
+
         return StatusCode(
             StatusCodes.Status201Created,
-            result.Value);
+            response);
     }
 }

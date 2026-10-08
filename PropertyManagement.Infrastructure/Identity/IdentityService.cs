@@ -11,7 +11,6 @@ public sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
     IClock clock) : IIdentityService
 {
-
     private static ErrorType MapIdentityErrorType(string errorCode)
     {
         return errorCode switch
@@ -70,5 +69,35 @@ public sealed class IdentityService(
             .ToArray();
 
         return Result<IdentityUserResult>.Failure(errors);
+    }
+
+    public async Task<Result<string>> GenerateEmailConfirmationTokenAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(
+            userId.ToString());
+
+        if (user is null)
+        {
+            return Result<string>.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return Result<string>.Failure(
+                new Error(
+                    Code: "Identity.EmailAlreadyConfirmed",
+                    Message: "The email address is already confirmed.",
+                    Type: ErrorType.Failure));
+        }
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        return Result<string>.Success(token);
     }
 }

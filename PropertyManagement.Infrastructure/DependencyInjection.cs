@@ -2,11 +2,14 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
+using PropertyManagement.Infrastructure.Common.Time;
+using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
-using PropertyManagement.Application.Abstractions;
-using PropertyManagement.Infrastructure.Common.Time;
+
 
 namespace PropertyManagement.Infrastructure
 {
@@ -24,6 +27,8 @@ namespace PropertyManagement.Infrastructure
             (
                 options => options.UseSqlServer(connectionString)
             );
+
+            services.AddDataProtection();
 
             services.AddSingleton<IClock, SystemClock>();
 
@@ -44,9 +49,42 @@ namespace PropertyManagement.Infrastructure
                 options.SignIn.RequireConfirmedEmail = true;
             })
             .AddRoles<IdentityRole<Guid>>()
-            .AddEntityFrameworkStores<ApplicationDbContext>();
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddDefaultTokenProviders();
+
 
             services.AddScoped<IIdentityService, IdentityService>();
+
+            services.AddOptions<SmtpOptions>()
+                .Bind(configuration.GetSection(SmtpOptions.SectionName))
+                .Validate(options =>
+                    !string.IsNullOrWhiteSpace(options.Host),
+                    "SMTP host is required.")
+                .Validate(options =>
+                    options.Port is > 0 and <= 65535,
+                    "SMTP port must be between 1 and 65535.")
+                .Validate(options =>
+                    !string.IsNullOrWhiteSpace(options.FromEmail),
+                    "SMTP from email is required.")
+                .Validate(options =>
+                    !string.IsNullOrWhiteSpace(options.FromName),
+                    "SMTP from name is required.")
+                .ValidateOnStart();
+
+            services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+            services.AddOptions<EmailConfirmationOptions>()
+                .Bind(configuration.GetSection(
+                    EmailConfirmationOptions.SectionName))
+                .Validate(options =>
+                    !string.IsNullOrWhiteSpace(options.BaseUrl),
+                    "Email confirmation base URL is required.")
+                .ValidateOnStart();
+
+            services.AddScoped<
+                IEmailConfirmationLinkBuilder,
+                EmailConfirmationLinkBuilder>();
+
 
             return services;
         }

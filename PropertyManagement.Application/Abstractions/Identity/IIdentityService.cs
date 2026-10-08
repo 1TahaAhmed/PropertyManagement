@@ -15,5 +15,10 @@ namespace PropertyManagement.Application.Abstractions.Identity
             string password,
             CancellationToken cancellationToken = default
         );
+
+        Task<Result<string>> GenerateEmailConfirmationTokenAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default
+        );
     }
 }
