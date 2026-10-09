@@ -21,7 +21,7 @@ public sealed class EmailConfirmationLinkBuilder(
             confirmationToken);
 
         var endpoint =
-            $"{_options.BaseUrl.TrimEnd('/')}/api/v1/auth/confirm-email";
+        $"{_options.BaseUrl.TrimEnd('/')}/api/v1/email-confirmation/start";
 
         return QueryHelpers.AddQueryString(
             endpoint,

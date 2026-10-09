@@ -100,4 +100,57 @@ public sealed class IdentityService(
 
         return Result<string>.Success(token);
     }
+
+    public async Task<Result<EmailConfirmationUserResult>>
+        ValidateEmailConfirmationTokenAsync(
+        Guid userId,
+        string token,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(
+            userId.ToString());
+
+        if (user is null)
+        {
+            return Result<EmailConfirmationUserResult>.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return Result<EmailConfirmationUserResult>.Failure(
+                new Error(
+                    Code: "Identity.EmailAlreadyConfirmed",
+                    Message: "The email address is already confirmed.",
+                    Type: ErrorType.Failure));
+        }
+
+        var isValid = await userManager.VerifyUserTokenAsync(
+            user,
+            userManager.Options.Tokens
+                .EmailConfirmationTokenProvider,
+            UserManager<ApplicationUser>
+                .ConfirmEmailTokenPurpose,
+            token);
+
+        if (!isValid)
+        {
+            return Result<EmailConfirmationUserResult>.Failure(
+                new Error(
+                    Code: "Identity.InvalidEmailConfirmationToken",
+                    Message: "The confirmation link is invalid or expired.",
+                    Type: ErrorType.Validation));
+        }
+
+        return Result<EmailConfirmationUserResult>.Success(
+            new EmailConfirmationUserResult(
+                UserId: user.Id,
+                Email: user.Email!,
+                FirstName: user.FirstName));
+    }
 }

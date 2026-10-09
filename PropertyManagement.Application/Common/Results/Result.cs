@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PropertyManagement.Application.Common.Results
+﻿namespace PropertyManagement.Application.Common.Results
 {
     public class Result : IResult<Result>
     {

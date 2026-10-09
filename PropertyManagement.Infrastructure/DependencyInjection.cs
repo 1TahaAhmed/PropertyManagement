@@ -2,13 +2,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
+using PropertyManagement.Application.Abstractions.Security;
+using PropertyManagement.Infrastructure.Common.Security;
 using PropertyManagement.Infrastructure.Common.Time;
 using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
+using PropertyManagement.Infrastructure.Persistence.Repositories;
+
 
 
 namespace PropertyManagement.Infrastructure
@@ -79,12 +84,33 @@ namespace PropertyManagement.Infrastructure
                 .Validate(options =>
                     !string.IsNullOrWhiteSpace(options.BaseUrl),
                     "Email confirmation base URL is required.")
+                .Validate(options =>
+                    options.CodeLifetimeMinutes is > 0 and <= 60,
+                    "Email confirmation code lifetime must be between 1 and 60 minutes.")
                 .ValidateOnStart();
+
+            services.AddSingleton<IEmailConfirmationSettings>(
+                serviceProvider =>
+                    serviceProvider
+                        .GetRequiredService<
+                            IOptions<EmailConfirmationOptions>>()
+                        .Value);
 
             services.AddScoped<
                 IEmailConfirmationLinkBuilder,
                 EmailConfirmationLinkBuilder>();
 
+            services.AddScoped<
+                IEmailConfirmationChallengeRepository,
+                EmailConfirmationChallengeRepository>();
+
+            services.AddSingleton<
+                IVerificationCodeGenerator,
+                RandomVerificationCodeGenerator>();
+
+            services.AddSingleton<
+                IVerificationCodeProtector,
+                DataProtectionVerificationCodeProtector>();
 
             return services;
         }
