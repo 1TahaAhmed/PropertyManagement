@@ -153,4 +153,53 @@ public sealed class IdentityService(
                 Email: user.Email!,
                 FirstName: user.FirstName));
     }
+
+    public async Task<Result> ConfirmEmailAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(
+            userId.ToString());
+
+        if (user is null)
+        {
+            return Result.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        if (user.EmailConfirmed)
+        {
+            return Result.Failure(
+                new Error(
+                    Code: "Identity.EmailAlreadyConfirmed",
+                    Message: "The email address is already confirmed.",
+                    Type: ErrorType.Failure));
+        }
+
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(
+            user);
+
+        var identityResult = await userManager.ConfirmEmailAsync(
+            user,
+            token);
+
+        if (!identityResult.Succeeded)
+        {
+            var errors = identityResult.Errors
+                .Select(error => new Error(
+                    Code: $"Identity.{error.Code}",
+                    Message: error.Description,
+                    Type: ErrorType.Failure))
+                .ToArray();
+
+            return Result.Failure(errors);
+        }
+
+        return Result.Success();
+    }
 }
