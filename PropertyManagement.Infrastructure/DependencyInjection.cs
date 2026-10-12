@@ -124,10 +124,6 @@ namespace PropertyManagement.Infrastructure
 
 
             services.AddScoped<
-                IEmailConfirmationLinkBuilder,
-                EmailConfirmationLinkBuilder>();
-
-            services.AddScoped<
                 IEmailConfirmationChallengeRepository,
                 EmailConfirmationChallengeRepository>();
 
