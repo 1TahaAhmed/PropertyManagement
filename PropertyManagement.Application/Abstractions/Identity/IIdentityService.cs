@@ -29,5 +29,10 @@ namespace PropertyManagement.Application.Abstractions.Identity
         Task<Result> ConfirmEmailAsync(
             Guid userId,
             CancellationToken cancellationToken = default);
+
+        Task<Result<EmailConfirmationUserResult>> GetEmailConfirmationUserAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default);
+
     }
 }

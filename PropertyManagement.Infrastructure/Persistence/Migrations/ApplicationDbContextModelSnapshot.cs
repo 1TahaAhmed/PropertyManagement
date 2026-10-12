@@ -194,6 +194,31 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
                     b.ToTable("EmailConfirmationChallenges", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Authentication.EmailConfirmationResendAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IpAddress", "RequestedAt");
+
+                    b.HasIndex("UserId", "RequestedAt");
+
+                    b.ToTable("EmailConfirmationResendAttempts", (string)null);
+                });
+
             modelBuilder.Entity("PropertyManagement.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
