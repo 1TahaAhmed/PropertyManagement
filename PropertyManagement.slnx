@@ -1,6 +1,15 @@
 <Solution>
-  <Project Path="PropertyManagement.Api/PropertyManagement.Api.csproj" />
-  <Project Path="PropertyManagement.Application/PropertyManagement.Application.csproj" />
-  <Project Path="PropertyManagement.Domain/PropertyManagement.Domain.csproj" />
-  <Project Path="PropertyManagement.Infrastructure/PropertyManagement.Infrastructure.csproj" />
+  <Folder Name="/src/">
+    <Project Path="src/PropertyManagement.Api/PropertyManagement.Api.csproj" />
+    <Project Path="src/PropertyManagement.Application/PropertyManagement.Application.csproj" />
+    <Project Path="src/PropertyManagement.Domain/PropertyManagement.Domain.csproj" />
+    <Project Path="src/PropertyManagement.Infrastructure/PropertyManagement.Infrastructure.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/PropertyManagement.Api.Tests/PropertyManagement.Api.Tests.csproj" />
+    <Project Path="tests/PropertyManagement.Application.Tests/PropertyManagement.Application.Tests.csproj" />
+    <Project Path="tests/PropertyManagement.Domain.Tests/PropertyManagement.Domain.Tests.csproj" />
+    <Project Path="tests/PropertyManagement.IntegrationTests/PropertyManagement.IntegrationTests.csproj" />
+  </Folder>
 </Solution>

@@ -30,6 +30,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 
+app.UseMiddleware<RequestLoggingMiddleware>();
+
 app.UseHttpsRedirection();
 
 app.UseRouting();
