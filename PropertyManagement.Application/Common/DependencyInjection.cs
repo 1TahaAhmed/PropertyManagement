@@ -1,9 +1,11 @@
 ﻿using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
+using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Common.Behaviors;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Authentication.Registeration;
+using PropertyManagement.Application.Services.EmailConfirmation;
 
 namespace PropertyManagement.Application.Common
 {
@@ -25,6 +27,9 @@ namespace PropertyManagement.Application.Common
                 typeof(IPipelineBehavior<,>),
                 typeof(ValidationBehavior<,>));
 
+            services.AddScoped<
+                IEmailConfirmationCodeIssuer,
+                EmailConfirmationCodeIssuer>();
 
             return services;
         }

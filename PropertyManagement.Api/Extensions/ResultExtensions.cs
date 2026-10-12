@@ -40,9 +40,10 @@ public static class ResultExtensions
             ErrorType.Forbidden => 1,
             ErrorType.NotFound => 2,
             ErrorType.Conflict => 3,
-            ErrorType.Validation => 4,
-            ErrorType.Failure => 5,
-            _ => 6
+            ErrorType.TooManyRequests => 4,
+            ErrorType.Validation => 5,
+            ErrorType.Failure => 6,
+            _ => 7
         };
     }
 
@@ -56,6 +57,7 @@ public static class ResultExtensions
             ErrorType.Unauthorized => StatusCodes.Status401Unauthorized,
             ErrorType.Forbidden => StatusCodes.Status403Forbidden,
             ErrorType.NotFound => StatusCodes.Status404NotFound,
+            ErrorType.TooManyRequests => StatusCodes.Status429TooManyRequests,
             ErrorType.Failure => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
         };

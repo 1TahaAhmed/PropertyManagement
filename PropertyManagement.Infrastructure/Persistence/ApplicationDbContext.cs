@@ -28,5 +28,10 @@ namespace PropertyManagement.Infrastructure.Persistence
         public DbSet<EmailConfirmationChallenge>
             EmailConfirmationChallenges => 
             Set<EmailConfirmationChallenge>();
+
+        public DbSet<EmailConfirmationResendAttempt>
+            EmailConfirmationResendAttempts =>
+            Set<EmailConfirmationResendAttempt>();
+
     }
 }

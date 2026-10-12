@@ -11,6 +11,7 @@ namespace PropertyManagement.Application.Common.Enums
         Unauthorized,
         Forbidden,
         NotFound,
+        TooManyRequests,
         Failure
     }
 }

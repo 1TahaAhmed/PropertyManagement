@@ -96,6 +96,33 @@ namespace PropertyManagement.Infrastructure
                             IOptions<EmailConfirmationOptions>>()
                         .Value);
 
+            services.AddOptions<EmailConfirmationResendOptions>()
+                .Bind(configuration.GetSection(
+                    EmailConfirmationResendOptions.SectionName))
+                .Validate(
+                    options => options.CooldownSeconds >= 30,
+                        "Resend cooldown must be at least 30 seconds.")
+                .Validate(
+                    options => options.WindowMinutes > 0,
+                        "Resend window must be positive.")
+                .Validate(
+                    options => options.MaxRequestsPerWindow > 0,
+                        "Maximum resend requests per window must be positive.")
+                .Validate(
+                    options =>
+                        options.MaxRequestsPerDay >=
+                        options.MaxRequestsPerWindow,
+                            "Daily resend limit must not be lower than window limit.")
+                .ValidateOnStart();
+
+            services.AddSingleton<IEmailConfirmationResendSettings>(
+                serviceProvider =>
+                    serviceProvider
+                        .GetRequiredService<
+                            IOptions<EmailConfirmationResendOptions>>()
+                        .Value);
+
+
             services.AddScoped<
                 IEmailConfirmationLinkBuilder,
                 EmailConfirmationLinkBuilder>();
@@ -103,6 +130,10 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<
                 IEmailConfirmationChallengeRepository,
                 EmailConfirmationChallengeRepository>();
+
+            services.AddScoped<
+                IEmailConfirmationResendPolicy,
+                EmailConfirmationResendPolicy>();
 
             services.AddSingleton<
                 IVerificationCodeGenerator,
