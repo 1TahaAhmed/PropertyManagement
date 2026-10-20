@@ -3,7 +3,10 @@ using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Units;
 using PropertyManagement.Application.Features.Units.Response;
+
+namespace PropertyManagement.Application.Features.Units.Update;
 
 public sealed class UpdateUnitCommandHandler(
     IUnitRepository unitRepository,
@@ -21,25 +24,27 @@ public sealed class UpdateUnitCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
-        if (!string.Equals(unit.UnitNumber, request.UnitNumber, StringComparison.OrdinalIgnoreCase))
+        var trimmedUnitNumber = request.UnitNumber.Trim();
+
+        if (!string.Equals(unit.UnitNumber, trimmedUnitNumber, StringComparison.OrdinalIgnoreCase))
         {
             var numberTaken = await unitRepository.ExistsByNumberAsync(
                 unit.TenantId,
                 unit.PropertyId,
-                request.UnitNumber,
+                trimmedUnitNumber,
                 cancellationToken);
 
             if (numberTaken)
             {
                 return Result<UnitResponse>.Failure(new Error(
                     Code: "Unit.DuplicateNumber",
-                    Message: $"A unit with number '{request.UnitNumber}' already exists in this property.",
+                    Message: $"A unit with number '{trimmedUnitNumber}' already exists in this property.",
                     Type: ErrorType.Conflict));
             }
         }
 
         unit.UpdateDetails(
-            request.UnitNumber,
+            trimmedUnitNumber,
             request.Type,
             request.MarketRent,
             request.FloorNumber,

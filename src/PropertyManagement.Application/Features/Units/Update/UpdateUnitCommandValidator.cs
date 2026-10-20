@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
 
+namespace PropertyManagement.Application.Features.Units.Update;
+
 public sealed class UpdateUnitCommandValidator : AbstractValidator<UpdateUnitCommand>
 {
     public UpdateUnitCommandValidator()

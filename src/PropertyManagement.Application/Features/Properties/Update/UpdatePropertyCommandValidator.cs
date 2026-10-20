@@ -1,19 +1,15 @@
 ﻿using FluentValidation;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace PropertyManagement.Application.Features.Properties.Update
+namespace PropertyManagement.Application.Features.Properties.Update;
+
+public sealed class UpdatePropertyCommandValidator : AbstractValidator<UpdatePropertyCommand>
 {
-    public sealed class UpdatePropertyCommandValidator : AbstractValidator<UpdatePropertyCommand>
+    public UpdatePropertyCommandValidator()
     {
-        public UpdatePropertyCommandValidator()
-        {
-            RuleFor(c => c.PropertyId).NotEmpty();
-            RuleFor(c => c.Name).NotEmpty().MaximumLength(150);
-            RuleFor(c => c.Address).NotEmpty().MaximumLength(300);
-            RuleFor(c => c.Type).IsInEnum();
-            RuleFor(c => c.Description).MaximumLength(1000);
-        }
+        RuleFor(c => c.PropertyId).NotEmpty();
+        RuleFor(c => c.Name).NotEmpty().MaximumLength(150);
+        RuleFor(c => c.Address).NotEmpty().MaximumLength(300);
+        RuleFor(c => c.Type).IsInEnum();
+        RuleFor(c => c.Description).MaximumLength(1000);
     }
 }

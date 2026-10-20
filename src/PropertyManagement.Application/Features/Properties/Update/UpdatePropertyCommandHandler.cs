@@ -4,8 +4,9 @@ using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Properties.Response;
-using PropertyManagement.Application.Features.Properties.Update;
 using PropertyManagement.Domain.Enums;
+
+namespace PropertyManagement.Application.Features.Properties.Update;
 
 public sealed class UpdatePropertyCommandHandler(
     IPropertyRepository propertyRepository,
@@ -31,7 +32,21 @@ public sealed class UpdatePropertyCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        property.UpdateDetails(request.Name, request.Address, request.Description, request.Type, clock.UtcNow);
+        var trimmedName = request.Name.Trim();
+
+        if (!string.Equals(property.Name, trimmedName, StringComparison.OrdinalIgnoreCase))
+        {
+            var nameExists = await propertyRepository.ExistsByNameAsync(property.TenantId, trimmedName, cancellationToken);
+            if (nameExists)
+            {
+                return Result<PropertyResponse>.Failure(new Error(
+                    Code: "Property.DuplicateName",
+                    Message: $"A property with the name '{trimmedName}' already exists.",
+                    Type: ErrorType.Conflict));
+            }
+        }
+
+        property.UpdateDetails(trimmedName, request.Address.Trim(), request.Description, request.Type, clock.UtcNow);
         await propertyRepository.SaveChangesAsync(cancellationToken);
 
         return Result<PropertyResponse>.Success(new PropertyResponse(

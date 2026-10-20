@@ -3,6 +3,8 @@ using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Units.Response;
 using PropertyManagement.Domain.Enums;
 
+namespace PropertyManagement.Application.Features.Units.Create;
+
 public sealed record CreateUnitCommand(
     Guid TenantId,
     Guid PropertyId,

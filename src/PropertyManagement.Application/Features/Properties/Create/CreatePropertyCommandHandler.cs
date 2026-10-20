@@ -3,9 +3,10 @@ using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Properties.Create;
 using PropertyManagement.Application.Features.Properties.Response;
 using PropertyManagement.Domain.Entities.Properties;
+
+namespace PropertyManagement.Application.Features.Properties.Create;
 
 public sealed class CreatePropertyCommandHandler(
     IPropertyRepository propertyRepository,
@@ -14,19 +15,21 @@ public sealed class CreatePropertyCommandHandler(
 {
     public async Task<Result<PropertyResponse>> Handle(CreatePropertyCommand request, CancellationToken cancellationToken)
     {
-        var nameExists = await propertyRepository.ExistsByNameAsync(request.TenantId, request.Name, cancellationToken);
+        var trimmedName = request.Name.Trim();
+
+        var nameExists = await propertyRepository.ExistsByNameAsync(request.TenantId, trimmedName, cancellationToken);
         if (nameExists)
         {
             return Result<PropertyResponse>.Failure(new Error(
                 Code: "Property.DuplicateName",
-                Message: $"A property with the name '{request.Name}' already exists.",
+                Message: $"A property with the name '{trimmedName}' already exists.",
                 Type: ErrorType.Conflict));
         }
 
         var property = Property.Create(
             request.TenantId,
-            request.Name,
-            request.Address,
+            trimmedName,
+            request.Address.Trim(),
             request.Type,
             clock.UtcNow,
             request.Description);

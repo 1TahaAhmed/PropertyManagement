@@ -7,6 +7,8 @@ using PropertyManagement.Application.Features.Units.Response;
 using PropertyManagement.Domain.Enums;
 using Unit = PropertyManagement.Domain.Entities.Properties.Unit;
 
+namespace PropertyManagement.Application.Features.Units.Create;
+
 public sealed class CreateUnitCommandHandler(
     IPropertyRepository propertyRepository,
     IUnitRepository unitRepository,
@@ -16,20 +18,14 @@ public sealed class CreateUnitCommandHandler(
     public async Task<Result<UnitResponse>> Handle(CreateUnitCommand request, CancellationToken cancellationToken)
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
-        if (property is null)
+
+        // منع الـ Information Disclosure: إرجاع NotFound لو العقار يخص شركة أخرى
+        if (property is null || property.TenantId != request.TenantId)
         {
             return Result<UnitResponse>.Failure(new Error(
                 Code: "Property.NotFound",
                 Message: "The specified property does not exist.",
                 Type: ErrorType.NotFound));
-        }
-
-        if (property.TenantId != request.TenantId)
-        {
-            return Result<UnitResponse>.Failure(new Error(
-                Code: "Property.TenantMismatch",
-                Message: "You cannot add a unit to a property owned by another tenant.",
-                Type: ErrorType.Forbidden));
         }
 
         if (property.Status == PropertyStatus.Archived)

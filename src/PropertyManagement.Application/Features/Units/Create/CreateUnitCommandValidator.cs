@@ -1,5 +1,7 @@
 ﻿using FluentValidation;
 
+namespace PropertyManagement.Application.Features.Units.Create;
+
 public sealed class CreateUnitCommandValidator : AbstractValidator<CreateUnitCommand>
 {
     public CreateUnitCommandValidator()
