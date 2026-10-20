@@ -16,8 +16,8 @@ public sealed class RegisterCommandValidatorTests
             LastName: "Ahmed",
             Address: "",
             Email: "invalid-email",
-            Password: "01034287863#Ta",
-            ConfirmPassword: "01034287863#Ta");
+            Password: "P@ssw0rd123!",
+            ConfirmPassword: "P@ssw0rd123!");
 
         // Act
         var result = await _validator.ValidateAsync(command);
@@ -38,7 +38,7 @@ public sealed class RegisterCommandValidatorTests
             LastName: "Ahmed",
             Address: "",
             Email: "taha@example.com",
-            Password: "01034287863#Ta",
+            Password: "P@ssw0rd123!",
             ConfirmPassword: "DifferentPassword#1");
 
         // Act
@@ -63,7 +63,7 @@ public sealed class RegisterCommandValidatorTests
             Address: "",
             Email: "taha@example.com",
             Password: "P@ssw0rd123!",
-            ConfirmPassword: "01034287863#Ta");
+            ConfirmPassword: "P@ssw0rd123!");
 
         // Act
         var result = await _validator.ValidateAsync(command);

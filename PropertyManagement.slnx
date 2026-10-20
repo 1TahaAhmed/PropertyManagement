@@ -1,12 +1,12 @@
 <Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path="ci.yml" />
+  </Folder>
   <Folder Name="/Dockerfile/">
     <File Path=".dockerignore" />
     <File Path="docker-compose.yml" />
     <File Path="DockerFile.txt" />
-  </Folder>
-  <Folder Name="/Dockerfile/.github/" />
-  <Folder Name="/Dockerfile/.github/workflows/">
-    <File Path="ci.yml" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/PropertyManagement.Api/PropertyManagement.Api.csproj" />

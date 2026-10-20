@@ -10,7 +10,6 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
-            .Include(p => p.Units)
             .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 

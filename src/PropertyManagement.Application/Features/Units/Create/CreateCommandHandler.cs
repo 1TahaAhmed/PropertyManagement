@@ -4,7 +4,6 @@ using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Units.Response;
-using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Domain.Enums;
 using Unit = PropertyManagement.Domain.Entities.Properties.Unit;
 
@@ -25,6 +24,14 @@ public sealed class CreateUnitCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
+        if (property.TenantId != request.TenantId)
+        {
+            return Result<UnitResponse>.Failure(new Error(
+                Code: "Property.TenantMismatch",
+                Message: "You cannot add a unit to a property owned by another tenant.",
+                Type: ErrorType.Forbidden));
+        }
+
         if (property.Status == PropertyStatus.Archived)
         {
             return Result<UnitResponse>.Failure(new Error(
@@ -33,24 +40,26 @@ public sealed class CreateUnitCommandHandler(
                 Type: ErrorType.Validation));
         }
 
+        var trimmedUnitNumber = request.UnitNumber.Trim();
+
         var unitExists = await unitRepository.ExistsByNumberAsync(
             request.TenantId,
             request.PropertyId,
-            request.UnitNumber,
+            trimmedUnitNumber,
             cancellationToken);
 
         if (unitExists)
         {
             return Result<UnitResponse>.Failure(new Error(
                 Code: "Unit.DuplicateNumber",
-                Message: $"A unit with number '{request.UnitNumber}' already exists in this property.",
+                Message: $"A unit with number '{trimmedUnitNumber}' already exists in this property.",
                 Type: ErrorType.Conflict));
         }
 
         var unit = Unit.Create(
             request.TenantId,
             request.PropertyId,
-            request.UnitNumber,
+            trimmedUnitNumber,
             request.Type,
             request.MarketRent,
             clock.UtcNow,

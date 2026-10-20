@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FluentValidation;
+using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
@@ -31,5 +32,14 @@ public sealed class ChangeUnitStatusCommandHandler(
         await unitRepository.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
+    }
+
+    public sealed class ChangeUnitStatusCommandValidator : AbstractValidator<ChangeUnitStatusCommand>
+    {
+        public ChangeUnitStatusCommandValidator()
+        {
+            RuleFor(c => c.UnitId).NotEmpty();
+            RuleFor(c => c.NewStatus).IsInEnum();
+        }
     }
 }

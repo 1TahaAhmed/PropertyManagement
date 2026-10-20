@@ -104,6 +104,11 @@ public sealed class Unit
             throw new ArgumentException("Square meters cannot be negative.", nameof(squareMeters));
         }
 
+        if (bedrooms < 0 || bathrooms < 0)
+        {
+            throw new ArgumentException("Bedrooms and bathrooms cannot be negative.");
+        }
+
         UnitNumber = unitNumber.Trim();
         Type = type;
         MarketRent = marketRent;
@@ -117,6 +122,11 @@ public sealed class Unit
 
     public void SetStatus(UnitOperationalStatus newStatus, DateTime utcNow)
     {
+        if (!Enum.IsDefined(typeof(UnitOperationalStatus), newStatus))
+        {
+            throw new ArgumentException("Invalid operational status.", nameof(newStatus));
+        }
+
         Status = newStatus;
         UpdatedAt = utcNow;
     }

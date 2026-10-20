@@ -18,16 +18,16 @@ public sealed class GlobalExceptionHandler(
             "Exception occurred. TraceId: {TraceId}",
             httpContext.TraceIdentifier);
 
-        if (exception is DbUpdateConcurrencyException)
+        if (exception is DbUpdateConcurrencyException or DbUpdateException)
         {
             httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
 
             var conflictDetails = new ProblemDetails
             {
                 Type = "https://httpstatuses.com/409",
-                Title = "Concurrency Conflict",
+                Title = "Conflict / Concurrency Violation",
                 Status = StatusCodes.Status409Conflict,
-                Detail = "The resource was modified by another user or transaction. Please refresh and try again.",
+                Detail = "A conflict occurred with existing data or a concurrent modification. Please verify your data and try again.",
                 Instance = httpContext.Request.Path
             };
 
