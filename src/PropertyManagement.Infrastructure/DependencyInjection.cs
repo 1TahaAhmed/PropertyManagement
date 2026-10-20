@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
+using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Infrastructure.Common.Security;
 using PropertyManagement.Infrastructure.Common.Time;
@@ -122,7 +123,6 @@ namespace PropertyManagement.Infrastructure
                             IOptions<EmailConfirmationResendOptions>>()
                         .Value);
 
-
             services.AddScoped<
                 IEmailConfirmationChallengeRepository,
                 EmailConfirmationChallengeRepository>();
@@ -138,6 +138,10 @@ namespace PropertyManagement.Infrastructure
             services.AddSingleton<
                 IVerificationCodeProtector,
                 DataProtectionVerificationCodeProtector>();
+
+            services.AddScoped<IPropertyRepository, PropertyRepository>();
+
+            services.AddScoped<IUnitRepository, UnitRepository>();
 
             return services;
         }

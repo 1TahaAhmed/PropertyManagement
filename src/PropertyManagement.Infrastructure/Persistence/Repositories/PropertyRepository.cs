@@ -1,0 +1,75 @@
+﻿using Microsoft.EntityFrameworkCore;
+using PropertyManagement.Application.Abstractions.Properties;
+using PropertyManagement.Domain.Entities.Properties;
+using PropertyManagement.Domain.Enums;
+
+namespace PropertyManagement.Infrastructure.Persistence.Repositories;
+
+public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
+{
+    public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Properties
+            .Include(p => p.Units)
+            .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+
+    public Task<bool> ExistsByNameAsync(Guid tenantId, string name, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Properties
+            .AnyAsync(p => p.TenantId == tenantId && p.Name == name, cancellationToken);
+    }
+
+    public async Task AddAsync(Property property, CancellationToken cancellationToken = default)
+    {
+        await dbContext.Properties.AddAsync(property, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(
+        Guid tenantId,
+        string? searchTerm,
+        PropertyStatus? status,
+        PropertyType? type,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.Properties
+            .AsNoTracking()
+            .Where(p => p.TenantId == tenantId);
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            var search = searchTerm.Trim().ToLower();
+            query = query.Where(p => p.Name.ToLower().Contains(search) || p.Address.ToLower().Contains(search));
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(p => p.Status == status.Value);
+        }
+
+        if (type.HasValue)
+        {
+            query = query.Where(p => p.Type == type.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var page = pageNumber <= 0 ? 1 : pageNumber;
+        var size = pageSize is <= 0 or > 100 ? 10 : pageSize;
+
+        var items = await query
+            .OrderByDescending(p => p.CreatedAt)
+            .Skip((page - 1) * size)
+            .Take(size)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+}

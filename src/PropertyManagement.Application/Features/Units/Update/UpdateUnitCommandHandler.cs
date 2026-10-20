@@ -1,0 +1,70 @@
+﻿using MediatR;
+using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Properties;
+using PropertyManagement.Application.Common.Enums;
+using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Units.Response;
+
+public sealed class UpdateUnitCommandHandler(
+    IUnitRepository unitRepository,
+    IClock clock)
+    : IRequestHandler<UpdateUnitCommand, Result<UnitResponse>>
+{
+    public async Task<Result<UnitResponse>> Handle(UpdateUnitCommand request, CancellationToken cancellationToken)
+    {
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
+        if (unit is null)
+        {
+            return Result<UnitResponse>.Failure(new Error(
+                Code: "Unit.NotFound",
+                Message: "Unit was not found.",
+                Type: ErrorType.NotFound));
+        }
+
+        if (!string.Equals(unit.UnitNumber, request.UnitNumber, StringComparison.OrdinalIgnoreCase))
+        {
+            var numberTaken = await unitRepository.ExistsByNumberAsync(
+                unit.TenantId,
+                unit.PropertyId,
+                request.UnitNumber,
+                cancellationToken);
+
+            if (numberTaken)
+            {
+                return Result<UnitResponse>.Failure(new Error(
+                    Code: "Unit.DuplicateNumber",
+                    Message: $"A unit with number '{request.UnitNumber}' already exists in this property.",
+                    Type: ErrorType.Conflict));
+            }
+        }
+
+        unit.UpdateDetails(
+            request.UnitNumber,
+            request.Type,
+            request.MarketRent,
+            request.FloorNumber,
+            request.Bedrooms,
+            request.Bathrooms,
+            request.SquareMeters,
+            request.Description,
+            clock.UtcNow);
+
+        await unitRepository.SaveChangesAsync(cancellationToken);
+
+        return Result<UnitResponse>.Success(new UnitResponse(
+            unit.Id,
+            unit.TenantId,
+            unit.PropertyId,
+            unit.UnitNumber,
+            unit.FloorNumber,
+            unit.Type,
+            unit.Status,
+            unit.MarketRent,
+            unit.Bedrooms,
+            unit.Bathrooms,
+            unit.SquareMeters,
+            unit.Description,
+            unit.CreatedAt,
+            unit.UpdatedAt));
+    }
+}

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Domain.Entities.Authentication;
+using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Infrastructure.Identity;
 
 namespace PropertyManagement.Infrastructure.Persistence
@@ -33,5 +34,7 @@ namespace PropertyManagement.Infrastructure.Persistence
             EmailConfirmationResendAttempts =>
             Set<EmailConfirmationResendAttempt>();
 
+        public DbSet<Property> Properties => Set<Property>();
+        public DbSet<Unit> Units => Set<Unit>();
     }
 }

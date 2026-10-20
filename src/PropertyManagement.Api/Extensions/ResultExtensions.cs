@@ -6,6 +6,30 @@ namespace PropertyManagement.Api.Extensions;
 
 public static class ResultExtensions
 {
+    public static IActionResult ToActionResult(
+        this ControllerBase controller,
+        Result result)
+    {
+        if (result.IsSuccess)
+        {
+            return controller.Ok();
+        }
+
+        var statusCode = result.Errors
+            .Select(error => error.Type)
+            .Distinct()
+            .OrderBy(GetErrorPriority)
+            .Select(GetStatusCode)
+            .First();
+
+        return new ObjectResult(new
+        {
+            errors = result.Errors
+        })
+        {
+            StatusCode = statusCode
+        };
+    }
     public static IActionResult ToActionResult<T>(
         this ControllerBase controller,
         Result<T> result)

@@ -62,7 +62,7 @@ public sealed class RegisterCommandValidatorTests
             LastName: "Ahmed",
             Address: "",
             Email: "taha@example.com",
-            Password: "01034287863#Ta",
+            Password: "P@ssw0rd123!",
             ConfirmPassword: "01034287863#Ta");
 
         // Act
