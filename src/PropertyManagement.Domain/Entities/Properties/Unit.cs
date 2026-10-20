@@ -4,7 +4,7 @@ namespace PropertyManagement.Domain.Entities.Properties;
 
 public sealed class Unit
 {
-    private Unit() { }
+    private Unit() { } 
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
@@ -20,7 +20,6 @@ public sealed class Unit
     public string Description { get; private set; } = string.Empty;
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
-
     public byte[] RowVersion { get; private set; } = [];
 
     public static Unit Create(

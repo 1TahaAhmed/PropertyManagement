@@ -7,6 +7,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
 {
+    // شيلنا .Include(p => p.Units) عشان متسحبش كل شقق العمارة في الذاكرة
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties

@@ -18,16 +18,22 @@ public sealed class GlobalExceptionHandler(
             "Exception occurred. TraceId: {TraceId}",
             httpContext.TraceIdentifier);
 
-        if (exception is DbUpdateConcurrencyException or DbUpdateException)
+        var isUniqueViolation = exception is DbUpdateException dbUpdateEx &&
+                                dbUpdateEx.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx &&
+                                (sqlEx.Number == 2601 || sqlEx.Number == 2627);
+
+        if (exception is DbUpdateConcurrencyException || isUniqueViolation)
         {
             httpContext.Response.StatusCode = StatusCodes.Status409Conflict;
 
             var conflictDetails = new ProblemDetails
             {
                 Type = "https://httpstatuses.com/409",
-                Title = "Conflict / Concurrency Violation",
+                Title = "Conflict Detected",
                 Status = StatusCodes.Status409Conflict,
-                Detail = "A conflict occurred with existing data or a concurrent modification. Please verify your data and try again.",
+                Detail = isUniqueViolation
+                    ? "A record with the same unique identifier or name already exists."
+                    : "The resource was modified by another user. Please refresh and try again.",
                 Instance = httpContext.Request.Path
             };
 
