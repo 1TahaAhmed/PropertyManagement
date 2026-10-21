@@ -46,6 +46,7 @@ public sealed class CreatePropertyCommandHandler(
             property.Type,
             property.Status,
             property.CreatedAt,
-            property.UpdatedAt));
+            property.UpdatedAt,
+            Convert.ToBase64String(property.RowVersion)));
     }
 }

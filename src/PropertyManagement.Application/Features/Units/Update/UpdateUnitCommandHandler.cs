@@ -43,6 +43,22 @@ public sealed class UpdateUnitCommandHandler(
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(request.RowVersion))
+        {
+            try
+            {
+                var rowVersionBytes = Convert.FromBase64String(request.RowVersion);
+                unitRepository.SetRowVersion(unit, rowVersionBytes);
+            }
+            catch (FormatException)
+            {
+                return Result<UnitResponse>.Failure(new Error(
+                    Code: "Unit.InvalidRowVersion",
+                    Message: "The provided RowVersion concurrency token is invalid.",
+                    Type: ErrorType.Validation));
+            }
+        }
+
         unit.UpdateDetails(
             trimmedUnitNumber,
             request.Type,
@@ -70,6 +86,7 @@ public sealed class UpdateUnitCommandHandler(
             unit.SquareMeters,
             unit.Description,
             unit.CreatedAt,
-            unit.UpdatedAt));
+            unit.UpdatedAt,
+            Convert.ToBase64String(unit.RowVersion)));
     }
 }

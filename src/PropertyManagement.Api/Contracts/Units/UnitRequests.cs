@@ -17,11 +17,11 @@ public sealed record UpdateUnitRequest(
     string UnitNumber,
     UnitType Type,
     decimal MarketRent,
-    int? FloorNumber,
-    int Bedrooms,
-    int Bathrooms,
-    decimal SquareMeters,
-    string Description = "");
+    int? FloorNumber = null,
+    int Bedrooms = 0,
+    int Bathrooms = 0,
+    decimal SquareMeters = 0,
+    string Description = "",
+    string? RowVersion = null);
 
-public sealed record ChangeUnitStatusRequest(
-    UnitOperationalStatus NewStatus);
+public sealed record ChangeUnitStatusRequest(UnitOperationalStatus NewStatus);

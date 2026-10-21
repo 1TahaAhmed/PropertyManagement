@@ -16,4 +16,5 @@ public sealed record UnitResponse(
     decimal SquareMeters,
     string Description,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string RowVersion);

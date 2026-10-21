@@ -2,12 +2,16 @@
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Properties;
 using PropertyManagement.Api.Extensions;
+using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Properties;
 using PropertyManagement.Application.Features.Properties.Archive;
 using PropertyManagement.Application.Features.Properties.Create;
+using PropertyManagement.Application.Features.Properties.GetById;
+using PropertyManagement.Application.Features.Properties.GetProperties;
 using PropertyManagement.Application.Features.Properties.Response;
 using PropertyManagement.Application.Features.Properties.Update;
+using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -39,10 +43,50 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(PropertyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetById(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetPropertyByIdQuery(id);
+        var result = await sender.Send(query, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PagedList<PropertyResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] Guid tenantId,
+        [FromQuery] string? searchTerm,
+        [FromQuery] PropertyStatus? status,
+        [FromQuery] PropertyType? type,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetPropertiesQuery(tenantId, searchTerm, status, type, pageNumber, pageSize);
+        var result = await sender.Send(query, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(PropertyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
         Guid id,
         [FromBody] UpdatePropertyRequest request,
@@ -52,8 +96,9 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
             PropertyId: id,
             Name: request.Name,
             Address: request.Address,
+            Description: request.Description,
             Type: request.Type,
-            Description: request.Description);
+            RowVersion: request.RowVersion);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -73,7 +118,6 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     {
         var command = new ArchivePropertyCommand(id);
         var result = await sender.Send(command, cancellationToken);
-
         if (result.IsFailure)
         {
             return this.ToActionResult(result);

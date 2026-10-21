@@ -11,4 +11,5 @@ public sealed record PropertyResponse(
     PropertyType Type,
     PropertyStatus Status,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string RowVersion);

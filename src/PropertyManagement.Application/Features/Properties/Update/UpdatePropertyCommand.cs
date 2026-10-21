@@ -9,5 +9,6 @@ public sealed record UpdatePropertyCommand(
     Guid PropertyId,
     string Name,
     string Address,
+    string Description,
     PropertyType Type,
-    string Description = "") : IRequest<Result<PropertyResponse>>;
+    string? RowVersion = null) : IRequest<Result<PropertyResponse>>;

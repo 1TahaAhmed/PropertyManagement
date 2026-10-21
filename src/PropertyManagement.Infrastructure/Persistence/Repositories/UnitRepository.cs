@@ -24,6 +24,11 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
         await dbContext.Units.AddAsync(unit, cancellationToken);
     }
 
+    public void SetRowVersion(Unit unit, byte[] rowVersion)
+    {
+        dbContext.Entry(unit).Property(u => u.RowVersion).OriginalValue = rowVersion;
+    }
+
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         return dbContext.SaveChangesAsync(cancellationToken);

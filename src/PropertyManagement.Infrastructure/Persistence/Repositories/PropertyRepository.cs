@@ -7,7 +7,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
 {
-    // شيلنا .Include(p => p.Units) عشان متسحبش كل شقق العمارة في الذاكرة
+    // Excluded .Include(p => p.Units) to avoid pulling all units of the property into memory
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
@@ -23,6 +23,11 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     public async Task AddAsync(Property property, CancellationToken cancellationToken = default)
     {
         await dbContext.Properties.AddAsync(property, cancellationToken);
+    }
+
+    public void SetRowVersion(Property property, byte[] rowVersion)
+    {
+        dbContext.Entry(property).Property(p => p.RowVersion).OriginalValue = rowVersion;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -45,8 +50,8 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var search = searchTerm.Trim().ToLower();
-            query = query.Where(p => p.Name.ToLower().Contains(search) || p.Address.ToLower().Contains(search));
+            var trimmedSearch = searchTerm.Trim();
+            query = query.Where(p => p.Name.Contains(trimmedSearch) || p.Address.Contains(trimmedSearch));
         }
 
         if (status.HasValue)

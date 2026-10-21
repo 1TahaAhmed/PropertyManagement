@@ -19,7 +19,7 @@ public sealed class CreateUnitCommandHandler(
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
 
-        // منع الـ Information Disclosure: إرجاع NotFound لو العقار يخص شركة أخرى
+        // Prevent Information Disclosure: return NotFound if property belongs to another tenant
         if (property is null || property.TenantId != request.TenantId)
         {
             return Result<UnitResponse>.Failure(new Error(
@@ -82,6 +82,7 @@ public sealed class CreateUnitCommandHandler(
             unit.SquareMeters,
             unit.Description,
             unit.CreatedAt,
-            unit.UpdatedAt));
+            unit.UpdatedAt,
+            Convert.ToBase64String(unit.RowVersion)));
     }
 }

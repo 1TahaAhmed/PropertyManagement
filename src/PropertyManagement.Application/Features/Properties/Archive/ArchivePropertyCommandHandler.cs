@@ -3,7 +3,8 @@ using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Properties.Archive;
+
+namespace PropertyManagement.Application.Features.Properties.Archive;
 
 public sealed class ArchivePropertyCommandHandler(
     IPropertyRepository propertyRepository,

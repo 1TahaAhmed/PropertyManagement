@@ -33,7 +33,6 @@ public sealed class UpdatePropertyCommandHandler(
         }
 
         var trimmedName = request.Name.Trim();
-
         if (!string.Equals(property.Name, trimmedName, StringComparison.OrdinalIgnoreCase))
         {
             var nameExists = await propertyRepository.ExistsByNameAsync(property.TenantId, trimmedName, cancellationToken);
@@ -43,6 +42,22 @@ public sealed class UpdatePropertyCommandHandler(
                     Code: "Property.DuplicateName",
                     Message: $"A property with the name '{trimmedName}' already exists.",
                     Type: ErrorType.Conflict));
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.RowVersion))
+        {
+            try
+            {
+                var rowVersionBytes = Convert.FromBase64String(request.RowVersion);
+                propertyRepository.SetRowVersion(property, rowVersionBytes);
+            }
+            catch (FormatException)
+            {
+                return Result<PropertyResponse>.Failure(new Error(
+                    Code: "Property.InvalidRowVersion",
+                    Message: "The provided RowVersion concurrency token is invalid.",
+                    Type: ErrorType.Validation));
             }
         }
 
@@ -58,6 +73,7 @@ public sealed class UpdatePropertyCommandHandler(
             property.Type,
             property.Status,
             property.CreatedAt,
-            property.UpdatedAt));
+            property.UpdatedAt,
+            Convert.ToBase64String(property.RowVersion)));
     }
 }

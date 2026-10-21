@@ -8,8 +8,8 @@ public interface IPropertyRepository
     Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<bool> ExistsByNameAsync(Guid tenantId, string name, CancellationToken cancellationToken = default);
     Task AddAsync(Property property, CancellationToken cancellationToken = default);
+    void SetRowVersion(Property property, byte[] rowVersion);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
-
     Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(
         Guid tenantId,
         string? searchTerm,

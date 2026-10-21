@@ -12,5 +12,6 @@ public sealed record CreatePropertyRequest(
 public sealed record UpdatePropertyRequest(
     string Name,
     string Address,
+    string Description,
     PropertyType Type,
-    string Description = "");
+    string? RowVersion = null);

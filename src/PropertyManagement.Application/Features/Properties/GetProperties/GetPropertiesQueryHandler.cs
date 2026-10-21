@@ -30,7 +30,8 @@ public sealed class GetPropertiesQueryHandler(IPropertyRepository propertyReposi
             p.Type,
             p.Status,
             p.CreatedAt,
-            p.UpdatedAt)).ToList();
+            p.UpdatedAt,
+            Convert.ToBase64String(p.RowVersion))).ToList();
 
         return Result<PagedList<PropertyResponse>>.Success(
             new PagedList<PropertyResponse>(responseItems, request.PageNumber, request.PageSize, totalCount));

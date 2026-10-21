@@ -4,7 +4,7 @@ namespace PropertyManagement.Domain.Entities.Properties;
 
 public sealed class Property
 {
-    private Property() { } 
+    private Property() { }
 
     public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
@@ -48,6 +48,16 @@ public sealed class Property
             Status = PropertyStatus.Active,
             CreatedAt = utcNow
         };
+    }
+
+    public void AddUnit(Unit unit)
+    {
+        ArgumentNullException.ThrowIfNull(unit);
+        if (Status == PropertyStatus.Archived)
+        {
+            throw new InvalidOperationException("Cannot add units to an archived property.");
+        }
+        _units.Add(unit);
     }
 
     public void UpdateDetails(string name, string address, string description, PropertyType type, DateTime utcNow)

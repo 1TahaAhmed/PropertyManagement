@@ -2,8 +2,8 @@
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Units;
 using PropertyManagement.Application.Features.Units.Response;
+using PropertyManagement.Domain.Entities.Properties;
 
 namespace PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 
@@ -36,7 +36,8 @@ public sealed class GetUnitsByPropertyQueryHandler(IUnitRepository unitRepositor
             u.SquareMeters,
             u.Description,
             u.CreatedAt,
-            u.UpdatedAt)).ToList();
+            u.UpdatedAt,
+            Convert.ToBase64String(u.RowVersion))).ToList();
 
         return Result<PagedList<UnitResponse>>.Success(
             new PagedList<UnitResponse>(responseItems, request.PageNumber, request.PageSize, totalCount));

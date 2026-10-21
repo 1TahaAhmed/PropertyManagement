@@ -22,14 +22,21 @@ public static class ResultExtensions
             .Select(GetStatusCode)
             .First();
 
-        return new ObjectResult(new
+        var primaryError = result.Errors.First();
+        var problemDetails = new ProblemDetails
         {
-            errors = result.Errors
-        })
-        {
-            StatusCode = statusCode
+            Type = $"https://httpstatuses.com/{statusCode}",
+            Title = GetTitle(statusCode),
+            Status = statusCode,
+            Detail = primaryError.Message,
+            Instance = controller.Request.Path
         };
+
+        problemDetails.Extensions["errors"] = result.Errors;
+
+        return controller.StatusCode(statusCode, problemDetails);
     }
+
     public static IActionResult ToActionResult<T>(
         this ControllerBase controller,
         Result<T> result)
@@ -46,15 +53,31 @@ public static class ResultExtensions
             .Select(GetStatusCode)
             .First();
 
-
-        return new ObjectResult(new
+        var primaryError = result.Errors.First();
+        var problemDetails = new ProblemDetails
         {
-            errors = result.Errors
-        })
-        {
-            StatusCode = statusCode
+            Type = $"https://httpstatuses.com/{statusCode}",
+            Title = GetTitle(statusCode),
+            Status = statusCode,
+            Detail = primaryError.Message,
+            Instance = controller.Request.Path
         };
+
+        problemDetails.Extensions["errors"] = result.Errors;
+
+        return controller.StatusCode(statusCode, problemDetails);
     }
+
+    private static string GetTitle(int statusCode) => statusCode switch
+    {
+        StatusCodes.Status400BadRequest => "Bad Request",
+        StatusCodes.Status401Unauthorized => "Unauthorized",
+        StatusCodes.Status403Forbidden => "Forbidden",
+        StatusCodes.Status404NotFound => "Not Found",
+        StatusCodes.Status409Conflict => "Conflict",
+        StatusCodes.Status429TooManyRequests => "Too Many Requests",
+        _ => "An error occurred"
+    };
 
     private static int GetErrorPriority(ErrorType errorType)
     {
@@ -70,7 +93,6 @@ public static class ResultExtensions
             _ => 7
         };
     }
-
 
     private static int GetStatusCode(ErrorType errorType)
     {
