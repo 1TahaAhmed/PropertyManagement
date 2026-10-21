@@ -40,7 +40,8 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 
-        builder.HasIndex(p => p.TenantId);
+        builder.HasIndex(p => p.TenantId)
+            .IsUnique();
 
         builder.HasIndex(p => new { p.TenantId, p.Name });
 

@@ -55,8 +55,8 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
         builder.Property(u => u.CreatedAt)
             .IsRequired();
 
-        builder.HasIndex(u => u.TenantId);
-        builder.HasIndex(u => u.PropertyId);
+        builder.HasIndex(u => u.TenantId).IsUnique();
+        builder.HasIndex(u => u.PropertyId).IsUnique();
 
         builder.HasIndex(u => new { u.TenantId, u.PropertyId, u.UnitNumber })
             .IsUnique();
