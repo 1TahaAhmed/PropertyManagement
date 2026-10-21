@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/.github/" />
   <Folder Name="/.github/workflows/">
-    <File Path="ci.yml" />
+    <File Path=".github/workflows/ci.yml" />
   </Folder>
   <Folder Name="/Dockerfile/">
     <File Path=".dockerignore" />
@@ -14,7 +14,6 @@
     <Project Path="src/PropertyManagement.Domain/PropertyManagement.Domain.csproj" />
     <Project Path="src/PropertyManagement.Infrastructure/PropertyManagement.Infrastructure.csproj" />
   </Folder>
-
   <Folder Name="/tests/">
     <Project Path="tests/PropertyManagement.Api.Tests/PropertyManagement.Api.Tests.csproj" />
     <Project Path="tests/PropertyManagement.Application.Tests/PropertyManagement.Application.Tests.csproj" />
