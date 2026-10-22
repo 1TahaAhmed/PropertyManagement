@@ -129,7 +129,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         [FromBody] ChangeUnitStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new ChangeUnitStatusCommand(id, request.NewStatus);
+        var command = new ChangeUnitStatusCommand(id, request.TenantId, request.NewStatus);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

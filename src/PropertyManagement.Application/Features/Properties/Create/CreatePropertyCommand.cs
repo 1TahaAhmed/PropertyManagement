@@ -8,7 +8,6 @@ namespace PropertyManagement.Application.Features.Properties.Create;
 
 public sealed record CreatePropertyCommand(
     Guid TenantId,
-    Guid? excludePropertyId,
     string Name,
     string Address,
     PropertyType Type,

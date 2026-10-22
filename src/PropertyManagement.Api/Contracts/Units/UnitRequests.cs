@@ -16,13 +16,13 @@ public sealed record CreateUnitRequest(
 public sealed record UpdateUnitRequest(
     Guid TenantId,
     string UnitNumber,
+    string RowVersion,
     UnitType Type,
     decimal MarketRent,
     int? FloorNumber = null,
     int Bedrooms = 0,
     int Bathrooms = 0,
     decimal SquareMeters = 0,
-    string Description = "",
-    string? RowVersion = null);
+    string Description = "");
 
-public sealed record ChangeUnitStatusRequest(UnitOperationalStatus NewStatus);
+public sealed record ChangeUnitStatusRequest(Guid TenantId, UnitOperationalStatus NewStatus);

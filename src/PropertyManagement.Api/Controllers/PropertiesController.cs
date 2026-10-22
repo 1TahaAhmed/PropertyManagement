@@ -27,7 +27,6 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     {
         var command = new CreatePropertyCommand(
             TenantId: request.TenantId,
-            excludePropertyId: null,
             Name: request.Name,
             Address: request.Address,
             Type: request.Type,
@@ -93,7 +92,6 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     {
         var command = new UpdatePropertyCommand(
             TenantId: request.TenantId,
-            excludePropertyId: null,
             PropertyId: id,
             Name: request.Name,
             Address: request.Address,
@@ -115,7 +113,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Archive(
         Guid id,
-        Guid tenantId,
+        [FromQuery] Guid tenantId,
         CancellationToken cancellationToken)
     {
         var command = new ArchivePropertyCommand(id, tenantId);
