@@ -8,7 +8,7 @@ namespace PropertyManagement.Application.Features.Properties.Update;
 public sealed record UpdatePropertyCommand(
     Guid TenantId,
     Guid PropertyId,
-    Guid excludePropertyId,
+    Guid? excludePropertyId,
     string Name,
     string Address,
     string Description,

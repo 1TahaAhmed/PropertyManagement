@@ -6,7 +6,7 @@ namespace PropertyManagement.Application.Abstractions.Properties;
 public interface IPropertyRepository
 {
     Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<bool> ExistsByNameAsync(Guid tenantId, string name,Guid? excludePropertyId, CancellationToken cancellationToken = default);
+    Task<bool> ExistsByNameAsync(Guid tenantId, string name,Guid? excludePropertyId = null, CancellationToken cancellationToken = default);
     Task AddAsync(Property property, CancellationToken cancellationToken = default);
     void SetRowVersion(Property property, byte[] rowVersion);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);

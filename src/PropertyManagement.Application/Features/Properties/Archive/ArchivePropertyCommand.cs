@@ -3,6 +3,8 @@ using PropertyManagement.Application.Common.Results;
 
 namespace PropertyManagement.Application.Features.Properties.Archive
 {
-    public sealed record ArchivePropertyCommand(Guid PropertyId) 
+    public sealed record ArchivePropertyCommand(
+        Guid PropertyId,
+        Guid TenantId) 
         : IRequest<Result>;
 }

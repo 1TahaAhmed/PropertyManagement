@@ -4,7 +4,6 @@ namespace PropertyManagement.Api.Contracts.Properties;
 
 public sealed record CreatePropertyRequest(
     Guid TenantId,
-    Guid excludePropertyId,
     string Name,
     string Address,
     PropertyType Type,
@@ -12,7 +11,6 @@ public sealed record CreatePropertyRequest(
 
 public sealed record UpdatePropertyRequest(
     Guid TenantId,
-    Guid excludePropertyId,
     string Name,
     string Address,
     string Description,

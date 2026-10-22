@@ -36,7 +36,7 @@ public sealed class UpdatePropertyCommandHandler(
         var trimmedName = request.Name.Trim();
         if (!string.Equals(property.Name, trimmedName, StringComparison.OrdinalIgnoreCase))
         {
-            var nameExists = await propertyRepository.ExistsByNameAsync(property.TenantId, trimmedName, request.excludePropertyId,cancellationToken);
+            var nameExists = await propertyRepository.ExistsByNameAsync(property.TenantId, trimmedName, excludePropertyId: null,cancellationToken);
             if (nameExists)
             {
                 return Result<PropertyResponse>.Failure(new Error(

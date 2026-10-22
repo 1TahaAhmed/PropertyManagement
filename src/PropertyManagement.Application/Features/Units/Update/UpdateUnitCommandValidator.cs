@@ -7,6 +7,7 @@ public sealed class UpdateUnitCommandValidator : AbstractValidator<UpdateUnitCom
     public UpdateUnitCommandValidator()
     {
         RuleFor(c => c.UnitId).NotEmpty();
+        RuleFor(c => c.TenantId).NotEmpty();
         RuleFor(c => c.UnitNumber).NotEmpty().MaximumLength(50);
         RuleFor(c => c.Type).IsInEnum();
         RuleFor(c => c.MarketRent).GreaterThanOrEqualTo(0);
@@ -14,5 +15,6 @@ public sealed class UpdateUnitCommandValidator : AbstractValidator<UpdateUnitCom
         RuleFor(c => c.Bathrooms).GreaterThanOrEqualTo(0);
         RuleFor(c => c.SquareMeters).GreaterThanOrEqualTo(0);
         RuleFor(c => c.Description).MaximumLength(1000);
+        RuleFor(c => c.RowVersion).NotEmpty().WithMessage("Concurrency token (RowVersion) is required.");
     }
 }
