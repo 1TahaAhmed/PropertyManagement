@@ -328,11 +328,9 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PropertyId")
-                        .IsUnique();
+                    b.HasIndex("PropertyId");
 
-                    b.HasIndex("TenantId")
-                        .IsUnique();
+                    b.HasIndex("TenantId");
 
                     b.HasIndex("TenantId", "PropertyId", "UnitNumber")
                         .IsUnique();
