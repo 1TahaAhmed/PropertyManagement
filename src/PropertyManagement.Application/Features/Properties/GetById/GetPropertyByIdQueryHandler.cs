@@ -6,7 +6,8 @@ using PropertyManagement.Application.Features.Properties.Response;
 
 namespace PropertyManagement.Application.Features.Properties.GetById;
 
-public sealed class GetPropertyByIdQueryHandler(IPropertyRepository propertyRepository)
+public sealed class GetPropertyByIdQueryHandler(
+    IPropertyRepository propertyRepository)
     : IRequestHandler<GetPropertyByIdQuery, Result<PropertyResponse>>
 {
     public async Task<Result<PropertyResponse>> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)

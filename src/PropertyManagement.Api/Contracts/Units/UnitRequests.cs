@@ -14,6 +14,7 @@ public sealed record CreateUnitRequest(
     string Description = "");
 
 public sealed record UpdateUnitRequest(
+    Guid TenantId,
     string UnitNumber,
     UnitType Type,
     decimal MarketRent,

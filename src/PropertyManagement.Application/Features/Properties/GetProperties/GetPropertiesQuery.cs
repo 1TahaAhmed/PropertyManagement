@@ -1,7 +1,6 @@
 ﻿using MediatR;
 using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Properties;
 using PropertyManagement.Application.Features.Properties.Response;
 using PropertyManagement.Domain.Enums;
 

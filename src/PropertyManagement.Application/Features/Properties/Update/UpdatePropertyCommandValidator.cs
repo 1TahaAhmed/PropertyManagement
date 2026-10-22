@@ -11,5 +11,6 @@ public sealed class UpdatePropertyCommandValidator : AbstractValidator<UpdatePro
         RuleFor(c => c.Address).NotEmpty().MaximumLength(300);
         RuleFor(c => c.Type).IsInEnum();
         RuleFor(c => c.Description).MaximumLength(1000);
+        RuleFor(c => c.RowVersion).NotEmpty().WithMessage("Concurrency token (RowVersion) is required.");
     }
 }

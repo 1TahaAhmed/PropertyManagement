@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Common.Enums;

@@ -7,17 +7,24 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
 {
-    // Excluded .Include(p => p.Units) to avoid pulling all units of the property into memory
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
             .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
-    public Task<bool> ExistsByNameAsync(Guid tenantId, string name, CancellationToken cancellationToken = default)
+    public Task<bool> ExistsByNameAsync(
+        Guid tenantId,
+        string name,
+        Guid? excludePropertyId,
+        CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
-            .AnyAsync(p => p.TenantId == tenantId && p.Name == name, cancellationToken);
+            .AnyAsync(p =>
+                p.TenantId == tenantId &&
+                p.Name == name &&
+                (!excludePropertyId.HasValue || p.Id != excludePropertyId.Value),
+                cancellationToken);
     }
 
     public async Task AddAsync(Property property, CancellationToken cancellationToken = default)

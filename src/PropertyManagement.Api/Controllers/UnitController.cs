@@ -99,6 +99,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateUnitCommand(
+            TenantId: request.TenantId,
             UnitId: id,
             UnitNumber: request.UnitNumber,
             Type: request.Type,
@@ -108,7 +109,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
             Bathrooms: request.Bathrooms,
             SquareMeters: request.SquareMeters,
             Description: request.Description,
-            RowVersion: request.RowVersion);
+            RowVersion: request.RowVersion!);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)

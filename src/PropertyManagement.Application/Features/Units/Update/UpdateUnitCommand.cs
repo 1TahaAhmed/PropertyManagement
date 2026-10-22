@@ -6,6 +6,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Units.Update;
 
 public sealed record UpdateUnitCommand(
+    Guid TenantId,
     Guid UnitId,
     string UnitNumber,
     UnitType Type,
@@ -15,4 +16,4 @@ public sealed record UpdateUnitCommand(
     int Bathrooms = 0,
     decimal SquareMeters = 0,
     string Description = "",
-    string? RowVersion = null) : IRequest<Result<UnitResponse>>;
+    string RowVersion = default!) : IRequest<Result<UnitResponse>>;

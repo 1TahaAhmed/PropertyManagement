@@ -1,20 +1,8 @@
 ﻿using MediatR;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.VisualBasic;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Properties.Create;
-using PropertyManagement.Application.Features.Units.ChangeStatus;
-using PropertyManagement.Application.Features.Units.Create;
 using PropertyManagement.Application.Features.Units.Response;
-using PropertyManagement.Domain.Entities.Properties;
-using System.Diagnostics.Contracts;
-using System.Net;
-using System.Net.NetworkInformation;
-using static System.Net.WebRequestMethods;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 

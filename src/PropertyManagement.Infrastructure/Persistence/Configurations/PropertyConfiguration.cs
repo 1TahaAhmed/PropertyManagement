@@ -43,7 +43,8 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.HasIndex(p => p.TenantId)
             .IsUnique();
 
-        builder.HasIndex(p => new { p.TenantId, p.Name });
+        builder.HasIndex(p => new { p.TenantId, p.Name })
+            .IsUnique();
 
         builder.HasMany(p => p.Units)
             .WithOne()

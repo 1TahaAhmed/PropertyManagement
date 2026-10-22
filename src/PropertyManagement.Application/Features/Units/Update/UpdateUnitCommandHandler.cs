@@ -3,12 +3,13 @@ using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Units;
 using PropertyManagement.Application.Features.Units.Response;
+using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Application.Features.Units.Update;
 
 public sealed class UpdateUnitCommandHandler(
+    IPropertyRepository propertyRepository,
     IUnitRepository unitRepository,
     IClock clock)
     : IRequestHandler<UpdateUnitCommand, Result<UnitResponse>>
@@ -16,12 +17,22 @@ public sealed class UpdateUnitCommandHandler(
     public async Task<Result<UnitResponse>> Handle(UpdateUnitCommand request, CancellationToken cancellationToken)
     {
         var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
-        if (unit is null)
+        if (unit is null || unit.TenantId != request.TenantId)
         {
             return Result<UnitResponse>.Failure(new Error(
                 Code: "Unit.NotFound",
                 Message: "Unit was not found.",
                 Type: ErrorType.NotFound));
+        }
+
+        var property = await propertyRepository.GetByIdAsync(unit.PropertyId, cancellationToken);
+
+        if (property is null || property.Status == PropertyStatus.Archived)
+        {
+            return Result<UnitResponse>.Failure(new Error(
+                Code: "Property.Archived",
+                Message: "Cannot modify units of an archived property.",
+                Type: ErrorType.Validation));
         }
 
         var trimmedUnitNumber = request.UnitNumber.Trim();

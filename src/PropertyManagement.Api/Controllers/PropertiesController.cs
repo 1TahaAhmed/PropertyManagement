@@ -3,8 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Properties;
 using PropertyManagement.Api.Extensions;
 using PropertyManagement.Application.Common.Models;
-using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Properties;
 using PropertyManagement.Application.Features.Properties.Archive;
 using PropertyManagement.Application.Features.Properties.Create;
 using PropertyManagement.Application.Features.Properties.GetById;
@@ -29,6 +27,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     {
         var command = new CreatePropertyCommand(
             TenantId: request.TenantId,
+            excludePropertyId: request.excludePropertyId,
             Name: request.Name,
             Address: request.Address,
             Type: request.Type,
@@ -93,6 +92,8 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdatePropertyCommand(
+            TenantId: request.TenantId,
+            excludePropertyId: request.excludePropertyId,
             PropertyId: id,
             Name: request.Name,
             Address: request.Address,

@@ -19,7 +19,6 @@ public sealed class CreateUnitCommandHandler(
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
 
-        // Prevent Information Disclosure: return NotFound if property belongs to another tenant
         if (property is null || property.TenantId != request.TenantId)
         {
             return Result<UnitResponse>.Failure(new Error(
