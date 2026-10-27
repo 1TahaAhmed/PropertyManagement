@@ -50,16 +50,6 @@ public sealed class Property
         };
     }
 
-    public void AddUnit(Unit unit)
-    {
-        ArgumentNullException.ThrowIfNull(unit);
-        if (Status == PropertyStatus.Archived)
-        {
-            throw new InvalidOperationException("Cannot add units to an archived property.");
-        }
-        _units.Add(unit);
-    }
-
     public void UpdateDetails(string name, string address, string description, PropertyType type, DateTime utcNow)
     {
         if (Status == PropertyStatus.Archived)
