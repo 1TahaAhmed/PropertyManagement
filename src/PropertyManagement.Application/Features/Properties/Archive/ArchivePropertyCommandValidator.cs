@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace PropertyManagement.Application.Features.Properties.Archive.ArchivePropertyCommandValidator;
+namespace PropertyManagement.Application.Features.Properties.Archive;
 public sealed class ArchivePropertyCommandValidator : AbstractValidator<ArchivePropertyCommand>
 {
     public ArchivePropertyCommandValidator()

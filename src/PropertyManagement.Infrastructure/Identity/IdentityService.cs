@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Common.Enums;
@@ -241,8 +242,7 @@ public sealed class IdentityService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await userManager.FindByIdAsync(userId.ToString());
-
-        return user is not null;
+        return await userManager.Users
+        .AnyAsync(u => u.Id == userId && u.EmailConfirmed, cancellationToken);
     }
 }

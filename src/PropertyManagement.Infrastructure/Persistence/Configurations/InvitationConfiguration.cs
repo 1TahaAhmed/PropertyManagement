@@ -36,5 +36,10 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
 
         builder.HasIndex(i => i.TokenHash).IsUnique();
         builder.HasIndex(i => new { i.OrganizationId, i.Email });
+
+        builder.HasOne<Organization>()
+            .WithMany()
+            .HasForeignKey(i => i.OrganizationId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

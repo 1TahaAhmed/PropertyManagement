@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManagement.Api.Contracts.Organizations;
 using PropertyManagement.Api.Extensions;
 using PropertyManagement.Application.Features.Organizations.Register;
 using PropertyManagement.Application.Features.Organizations.Responses;
@@ -10,10 +11,6 @@ namespace PropertyManagement.Api.Controllers;
 [Route("api/v1/[controller]")]
 public sealed class OrganizationsController(ISender sender) : ControllerBase
 {
-    public sealed record RegisterOrganizationRequest(
-        string Name,
-        Guid OwnerUserId);
-
     [HttpPost]
     [ProducesResponseType(typeof(OrganizationResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

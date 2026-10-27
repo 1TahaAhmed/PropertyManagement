@@ -1,4 +1,5 @@
 ﻿using PropertyManagement.Domain.Enums;
+using System.Text.RegularExpressions;
 
 namespace PropertyManagement.Domain.Entities.Organizations;
 
@@ -34,7 +35,6 @@ public sealed class Organization
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
         Name = name.Trim();
-        Identifier = GenerateSlug(Name);
         UpdatedAt = utcNow;
     }
 
@@ -57,9 +57,10 @@ public sealed class Organization
 
     private static string GenerateSlug(string input)
     {
-        return input.ToLowerInvariant()
-            .Replace(" ", "-")
-            .Replace(".", "-")
-            .Trim('-');
+        var slug = input.ToLowerInvariant().Trim();
+        slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"-+", "-");
+        return slug.Trim('-');
     }
 }

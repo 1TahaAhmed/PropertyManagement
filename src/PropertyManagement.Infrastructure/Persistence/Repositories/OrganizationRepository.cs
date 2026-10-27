@@ -22,7 +22,7 @@ public sealed class OrganizationRepository(ApplicationDbContext context) : IOrga
     public async Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default)
     {
         return await context.Organizations
-            .AnyAsync(o => o.Name.ToLower() == name.ToLower(), cancellationToken);
+            .AnyAsync(o => o.Name == name, cancellationToken);
     }
 
     public async Task<bool> ExistsByIdentifierAsync(string identifier, CancellationToken cancellationToken = default)
