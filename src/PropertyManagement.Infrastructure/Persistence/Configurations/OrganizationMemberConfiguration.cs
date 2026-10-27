@@ -28,5 +28,10 @@ public sealed class OrganizationMemberConfiguration : IEntityTypeConfiguration<O
 
         builder.HasIndex(m => new { m.OrganizationId, m.UserId, m.Role }).IsUnique();
         builder.HasIndex(m => m.UserId);
+
+        builder.HasOne(m => m.Organization)
+            .WithMany()
+            .HasForeignKey(m => m.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

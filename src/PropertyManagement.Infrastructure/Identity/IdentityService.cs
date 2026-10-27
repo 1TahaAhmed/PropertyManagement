@@ -235,4 +235,14 @@ public sealed class IdentityService(
                     Email: user.Email!,
                     FirstName: user.FirstName));
     }
+
+    public async Task<bool> ExistsAsync(Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(userId.ToString());
+
+        return user is not null;
+    }
 }

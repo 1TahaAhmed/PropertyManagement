@@ -14,6 +14,8 @@ public sealed class OrganizationMember
     public DateTime JoinedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
+    public Organization Organization { get; private set; } = null!;
+
     public static OrganizationMember Create(
         Guid organizationId,
         Guid userId,

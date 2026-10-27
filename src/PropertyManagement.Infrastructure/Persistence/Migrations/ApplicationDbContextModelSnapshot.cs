@@ -616,6 +616,17 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Organizations.OrganizationMember", b =>
+                {
+                    b.HasOne("PropertyManagement.Domain.Entities.Organizations.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Organization");
+                });
+
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Properties.Unit", b =>
                 {
                     b.HasOne("PropertyManagement.Domain.Entities.Properties.Property", null)

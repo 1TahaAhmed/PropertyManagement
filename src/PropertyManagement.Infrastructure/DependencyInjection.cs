@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
+using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Infrastructure.Common.Security;
@@ -142,6 +143,8 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IPropertyRepository, PropertyRepository>();
 
             services.AddScoped<IUnitRepository, UnitRepository>();
+
+            services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
             return services;
         }
