@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Domain.Entities.Authentication;
+using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Infrastructure.Identity;
 
@@ -36,5 +37,10 @@ namespace PropertyManagement.Infrastructure.Persistence
 
         public DbSet<Property> Properties => Set<Property>();
         public DbSet<Unit> Units => Set<Unit>();
+
+        public DbSet<Organization> Organizations => Set<Organization>();
+        public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
+        public DbSet<Invitation> Invitations => Set<Invitation>();
+        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     }
 }
