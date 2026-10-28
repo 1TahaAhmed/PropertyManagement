@@ -8,8 +8,7 @@ using PropertyManagement.Application.Features.Authentication.PasswordReset.Reset
 using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Application.Features.Authentication.RegisterCompany;
 using PropertyManagement.Application.Features.Companies.Register;
-using ApiRegisterResponse =
-    PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
+using ApiRegisterResponse = PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -18,9 +17,7 @@ namespace PropertyManagement.Api.Controllers;
 public sealed class AuthController(ISender sender) : ControllerBase
 {
     [HttpPost("register")]
-    [ProducesResponseType(
-        typeof(ApiRegisterResponse),
-        StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiRegisterResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Register(
@@ -35,9 +32,7 @@ public sealed class AuthController(ISender sender) : ControllerBase
             Password: request.Password,
             ConfirmPassword: request.ConfirmPassword);
 
-        var result = await sender.Send(
-            command,
-            cancellationToken);
+        var result = await sender.Send(command, cancellationToken);
 
         if (result.IsFailure)
         {
@@ -52,9 +47,34 @@ public sealed class AuthController(ISender sender) : ControllerBase
             EmailConfirmed: result.Value.EmailConfirmed,
             CreatedAt: result.Value.CreatedAt);
 
-        return StatusCode(
-            StatusCodes.Status201Created,
-            response);
+        return StatusCode(StatusCodes.Status201Created, response);
+    }
+
+    [HttpPost("register-company")]
+    [ProducesResponseType(typeof(RegisterCompanyResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RegisterCompany(
+       [FromBody] RegisterCompanyRequest request,
+       CancellationToken cancellationToken)
+    {
+        var command = new RegisterCompanyCommand(
+            CompanyName: request.CompanyName,
+            Email: request.Email,
+            Password: request.Password,
+            FirstName: request.FirstName,
+            LastName: request.LastName,
+            PhoneNumber: request.PhoneNumber,
+            Address: request.Address);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 
     [HttpPost("forgot-password")]
@@ -65,7 +85,6 @@ public sealed class AuthController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new ForgotPasswordCommand(request.Email);
-
         var result = await sender.Send(command, cancellationToken);
 
         if (result.IsFailure)
@@ -103,32 +122,5 @@ public sealed class AuthController(ISender sender) : ControllerBase
         {
             message = "Password has been reset successfully. You can now log in with your new password."
         });
-    }
-
-    [HttpPost("register-company")]
-    [ProducesResponseType(typeof(RegisterCompanyResponse), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> RegisterCompany(
-       [FromBody] RegisterCompanyRequest request,
-       CancellationToken cancellationToken)
-    {
-        var command = new RegisterCompanyCommand(
-            CompanyName: request.CompanyName,
-            Email: request.Email,
-            Password: request.Password,
-            FirstName: request.FirstName,
-            LastName: request.LastName,
-            PhoneNumber: request.PhoneNumber,
-            Address: request.Address);
-
-        var result = await sender.Send(command, cancellationToken);
-
-        if (result.IsFailure)
-        {
-            return this.ToActionResult(result);
-        }
-
-        return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 }

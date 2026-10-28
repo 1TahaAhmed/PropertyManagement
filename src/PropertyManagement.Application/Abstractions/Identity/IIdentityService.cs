@@ -13,6 +13,7 @@ namespace PropertyManagement.Application.Abstractions.Identity
             string address,
             string email,
             string password,
+            string? phoneNumber = null,
             CancellationToken cancellationToken = default
         );
 
@@ -49,5 +50,9 @@ namespace PropertyManagement.Application.Abstractions.Identity
             string newPassowrd,
             CancellationToken cancellationToken = default
         );
+
+        Task<Result> DeleteUserAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default);
     }
 }

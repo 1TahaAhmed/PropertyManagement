@@ -34,6 +34,7 @@ public sealed class IdentityService(
         string address,
         string email,
         string password,
+        string? phoneNumber = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -45,7 +46,8 @@ public sealed class IdentityService(
             lastName,
             address,
             email,
-            createdAt);
+            createdAt,
+            phoneNumber);
 
         var identityResult = await userManager.CreateAsync(
             user,
@@ -308,5 +310,38 @@ public sealed class IdentityService(
             .ToArray();
 
         return Result.Failure(errors);
+    }
+
+    public async Task<Result> DeleteUserAsync(
+    Guid userId,
+    CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return Result.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        var identityResult = await userManager.DeleteAsync(user);
+
+        if (!identityResult.Succeeded)
+        {
+            var errors = identityResult.Errors
+                .Select(error => new Error(
+                    Code: $"Identity.{error.Code}",
+                    Message: error.Description,
+                    Type: MapIdentityErrorType(error.Code)))
+                .ToArray();
+
+            return Result.Failure(errors);
+        }
+
+        return Result.Success();
     }
 }
