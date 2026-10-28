@@ -14,7 +14,7 @@ public sealed class ArchivePropertyCommandHandler(
     public async Task<Result> Handle(ArchivePropertyCommand request, CancellationToken cancellationToken)
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
-        if (property is null || property.TenantId != request.TenantId)
+        if (property is null || property.OrganizationId != request.OrganizationId)
         {
             return Result.Failure(new Error(
                 Code: "Property.NotFound",

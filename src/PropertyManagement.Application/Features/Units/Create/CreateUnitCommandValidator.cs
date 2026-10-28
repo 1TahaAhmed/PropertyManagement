@@ -6,7 +6,7 @@ public sealed class CreateUnitCommandValidator : AbstractValidator<CreateUnitCom
 {
     public CreateUnitCommandValidator()
     {
-        RuleFor(c => c.TenantId).NotEmpty();
+        RuleFor(c => c.OrganizationId).NotEmpty();
         RuleFor(c => c.PropertyId).NotEmpty();
         RuleFor(c => c.UnitNumber).NotEmpty().MaximumLength(50);
         RuleFor(c => c.Type).IsInEnum();

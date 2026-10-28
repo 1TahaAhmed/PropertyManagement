@@ -3,12 +3,12 @@ using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Properties;
 
-public sealed class Property : ITenantScoped
+public sealed class Property : IOrganizationScoped
 {
     private Property() { }
 
     public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public Guid OrganizationId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Address { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
@@ -23,16 +23,16 @@ public sealed class Property : ITenantScoped
     public byte[] RowVersion { get; private set; } = [];
 
     public static Property Create(
-        Guid tenantId,
+        Guid organizationId,
         string name,
         string address,
         PropertyType type,
         DateTime utcNow,
         string description = "")
     {
-        if (tenantId == Guid.Empty)
+        if (organizationId == Guid.Empty)
         {
-            throw new ArgumentException("Tenant ID cannot be empty.", nameof(tenantId));
+            throw new ArgumentException("Organization ID cannot be empty.", nameof(organizationId));
         }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
@@ -41,7 +41,7 @@ public sealed class Property : ITenantScoped
         return new Property
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            OrganizationId = organizationId,
             Name = name.Trim(),
             Address = address.Trim(),
             Type = type,

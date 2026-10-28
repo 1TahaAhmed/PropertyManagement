@@ -28,7 +28,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new CreateUnitCommand(
-            TenantId: request.TenantId,
+            OrganizationId: request.OrganizationId,
             PropertyId: propertyId,
             UnitNumber: request.UnitNumber,
             Type: request.Type,
@@ -53,10 +53,10 @@ public sealed class UnitsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid organizationId,
         CancellationToken cancellationToken)
     {
-        var query = new GetUnitByIdQuery(tenantId, id);
+        var query = new GetUnitByIdQuery(organizationId, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -71,7 +71,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByProperty(
         Guid propertyId,
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid organizationId,
         [FromQuery] UnitOperationalStatus? status,
         [FromQuery] UnitType? type,
         [FromQuery] decimal? minRent,
@@ -80,7 +80,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetUnitsByPropertyQuery(tenantId, propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
+        var query = new GetUnitsByPropertyQuery(organizationId, propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -101,7 +101,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdateUnitCommand(
-            TenantId: request.TenantId,
+            OrganizationId: request.OrganizationId,
             UnitId: id,
             UnitNumber: request.UnitNumber,
             Type: request.Type,
@@ -131,7 +131,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         [FromBody] ChangeUnitStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new ChangeUnitStatusCommand(id, request.TenantId, request.NewStatus);
+        var command = new ChangeUnitStatusCommand(id, request.OrganizationId, request.NewStatus);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

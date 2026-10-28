@@ -4,7 +4,7 @@ namespace PropertyManagement.Application.Features.Properties.Response;
 
 public sealed record PropertyResponse(
     Guid Id,
-    Guid TenantId,
+    Guid OrganizationId,
     string Name,
     string Address,
     string Description,

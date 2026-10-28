@@ -8,11 +8,11 @@ public sealed class GetUnitsByPropertyQueryValidatorTests
     private readonly GetUnitsByPropertyQueryValidator _validator = new();
 
     [Fact]
-    public void Validate_ShouldFail_WhenTenantIdIsEmpty()
+    public void Validate_ShouldFail_WhenOrganizationIdIsEmpty()
     {
         var query = new GetUnitsByPropertyQuery(Guid.Empty, Guid.NewGuid(), null, null, null, null, 1, 10);
         var result = _validator.TestValidate(query);
-        result.ShouldHaveValidationErrorFor(x => x.TenantId);
+        result.ShouldHaveValidationErrorFor(x => x.OrganizationId);
     }
 
     [Fact]

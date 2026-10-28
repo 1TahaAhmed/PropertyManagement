@@ -6,6 +6,6 @@ public sealed class ArchivePropertyCommandValidator : AbstractValidator<ArchiveP
     public ArchivePropertyCommandValidator()
     {
         RuleFor(c => c.PropertyId).NotEmpty();
-        RuleFor(c => c.TenantId).NotEmpty();
+        RuleFor(c => c.OrganizationId).NotEmpty();
     }
 }

@@ -7,7 +7,7 @@ public sealed class ChangeUnitStatusCommandValidator : AbstractValidator<ChangeU
     public ChangeUnitStatusCommandValidator()
     {
         RuleFor(c => c.UnitId).NotEmpty();
-        RuleFor(c => c.TenantId).NotEmpty();
+        RuleFor(c => c.OrganizationId).NotEmpty();
         RuleFor(c => c.NewStatus).IsInEnum();
     }
 }

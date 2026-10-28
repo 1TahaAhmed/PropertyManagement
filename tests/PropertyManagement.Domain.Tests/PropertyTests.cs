@@ -11,19 +11,19 @@ public sealed class PropertyTests
     [Fact]
     public void Create_ShouldSucceed_WhenValidInputs()
     {
-        var tenantId = Guid.NewGuid();
+        var organizationId = Guid.NewGuid();
 
-        var property = Property.Create(tenantId, "Sunrise Tower", ValidAddress, PropertyType.Residential, FixedNow);
+        var property = Property.Create(organizationId, "Sunrise Tower", ValidAddress, PropertyType.Residential, FixedNow);
 
         Assert.NotEqual(Guid.Empty, property.Id);
-        Assert.Equal(tenantId, property.TenantId);
+        Assert.Equal(organizationId, property.OrganizationId);
         Assert.Equal("Sunrise Tower", property.Name);
         Assert.Equal(ValidAddress, property.Address);
         Assert.Equal(PropertyStatus.Active, property.Status);
     }
 
     [Fact]
-    public void Create_ShouldThrow_WhenTenantIdIsEmpty()
+    public void Create_ShouldThrow_WhenOrganizationIdIsEmpty()
     {
         Assert.Throws<ArgumentException>(() =>
             Property.Create(Guid.Empty, "Sunrise Tower", ValidAddress, PropertyType.Residential, FixedNow));

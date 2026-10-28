@@ -3,7 +3,7 @@
 namespace PropertyManagement.Api.Contracts.Units;
 
 public sealed record CreateUnitRequest(
-    Guid TenantId,
+    Guid OrganizationId,
     string UnitNumber,
     UnitType Type,
     decimal MarketRent,
@@ -14,7 +14,7 @@ public sealed record CreateUnitRequest(
     string Description = "");
 
 public sealed record UpdateUnitRequest(
-    Guid TenantId,
+    Guid OrganizationId,
     string UnitNumber,
     string RowVersion,
     UnitType Type,
@@ -25,4 +25,4 @@ public sealed record UpdateUnitRequest(
     decimal SquareMeters = 0,
     string Description = "");
 
-public sealed record ChangeUnitStatusRequest(Guid TenantId, UnitOperationalStatus NewStatus);
+public sealed record ChangeUnitStatusRequest(Guid OrganizationId, UnitOperationalStatus NewStatus);

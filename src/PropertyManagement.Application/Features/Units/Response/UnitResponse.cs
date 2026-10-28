@@ -4,7 +4,7 @@ namespace PropertyManagement.Application.Features.Units.Response;
 
 public sealed record UnitResponse(
     Guid Id,
-    Guid TenantId,
+    Guid OrganizationId,
     Guid PropertyId,
     string UnitNumber,
     int? FloorNumber,

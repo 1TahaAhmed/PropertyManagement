@@ -5,6 +5,6 @@ namespace PropertyManagement.Application.Features.Properties.Archive
 {
     public sealed record ArchivePropertyCommand(
         Guid PropertyId,
-        Guid TenantId) 
+        Guid OrganizationId) 
         : IRequest<Result>;
 }

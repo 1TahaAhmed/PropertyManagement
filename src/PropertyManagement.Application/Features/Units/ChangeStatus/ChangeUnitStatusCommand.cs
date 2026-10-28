@@ -6,5 +6,5 @@ namespace PropertyManagement.Application.Features.Units.ChangeStatus;
 
 public sealed record ChangeUnitStatusCommand(
     Guid UnitId,
-    Guid TenantId,
+    Guid OrganizationId,
     UnitOperationalStatus NewStatus) : IRequest<Result>;

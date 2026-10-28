@@ -17,7 +17,7 @@ public sealed class CreatePropertyCommandHandler(
     {
         var trimmedName = request.Name.Trim();
 
-        var nameExists = await propertyRepository.ExistsByNameAsync(request.TenantId, trimmedName, excludePropertyId: null,cancellationToken);
+        var nameExists = await propertyRepository.ExistsByNameAsync(request.OrganizationId, trimmedName, excludePropertyId: null,cancellationToken);
         if (nameExists)
         {
             return Result<PropertyResponse>.Failure(new Error(
@@ -27,7 +27,7 @@ public sealed class CreatePropertyCommandHandler(
         }
 
         var property = Property.Create(
-            request.TenantId,
+            request.OrganizationId,
             trimmedName,
             request.Address.Trim(),
             request.Type,
@@ -39,7 +39,7 @@ public sealed class CreatePropertyCommandHandler(
 
         return Result<PropertyResponse>.Success(new PropertyResponse(
             property.Id,
-            property.TenantId,
+            property.OrganizationId,
             property.Name,
             property.Address,
             property.Description,

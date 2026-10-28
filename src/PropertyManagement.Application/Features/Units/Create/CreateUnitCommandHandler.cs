@@ -19,7 +19,7 @@ public sealed class CreateUnitCommandHandler(
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
 
-        if (property is null || property.TenantId != request.TenantId)
+        if (property is null || property.OrganizationId != request.OrganizationId)
         {
             return Result<UnitResponse>.Failure(new Error(
                 Code: "Property.NotFound",
@@ -38,7 +38,7 @@ public sealed class CreateUnitCommandHandler(
         var trimmedUnitNumber = request.UnitNumber.Trim();
 
         var unitExists = await unitRepository.ExistsByNumberAsync(
-            request.TenantId,
+            request.OrganizationId,
             request.PropertyId,
             trimmedUnitNumber,
             cancellationToken);
@@ -52,7 +52,7 @@ public sealed class CreateUnitCommandHandler(
         }
 
         var unit = Unit.Create(
-            request.TenantId,
+            request.OrganizationId,
             request.PropertyId,
             trimmedUnitNumber,
             request.Type,
@@ -69,7 +69,7 @@ public sealed class CreateUnitCommandHandler(
 
         return Result<UnitResponse>.Success(new UnitResponse(
             unit.Id,
-            unit.TenantId,
+            unit.OrganizationId,
             unit.PropertyId,
             unit.UnitNumber,
             unit.FloorNumber,

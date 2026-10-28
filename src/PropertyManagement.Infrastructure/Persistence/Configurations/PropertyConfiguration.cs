@@ -15,7 +15,7 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.Property(p => p.Id)
             .ValueGeneratedNever();
 
-        builder.Property(p => p.TenantId)
+        builder.Property(p => p.OrganizationId)
             .IsRequired();
 
         builder.Property(p => p.Name)
@@ -40,9 +40,9 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
         builder.Property(p => p.CreatedAt)
             .IsRequired();
 
-        builder.HasIndex(p => p.TenantId);
+        builder.HasIndex(p => p.OrganizationId);
 
-        builder.HasIndex(p => new { p.TenantId, p.Name })
+        builder.HasIndex(p => new { p.OrganizationId, p.Name })
             .IsUnique();
 
         builder.HasMany(p => p.Units)

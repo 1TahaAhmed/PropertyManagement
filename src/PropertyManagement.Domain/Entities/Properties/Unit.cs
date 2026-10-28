@@ -3,12 +3,12 @@ using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Properties;
 
-public sealed class Unit : ITenantScoped
+public sealed class Unit : IOrganizationScoped
 {
     private Unit() { } 
 
     public Guid Id { get; private set; }
-    public Guid TenantId { get; private set; }
+    public Guid OrganizationId { get; private set; }
     public Guid PropertyId { get; private set; }
     public string UnitNumber { get; private set; } = string.Empty;
     public int? FloorNumber { get; private set; }
@@ -24,7 +24,7 @@ public sealed class Unit : ITenantScoped
     public byte[] RowVersion { get; private set; } = [];
 
     public static Unit Create(
-        Guid tenantId,
+        Guid organizationId,
         Guid propertyId,
         string unitNumber,
         UnitType type,
@@ -36,9 +36,9 @@ public sealed class Unit : ITenantScoped
         decimal squareMeters = 0,
         string description = "")
     {
-        if (tenantId == Guid.Empty)
+        if (organizationId == Guid.Empty)
         {
-            throw new ArgumentException("Tenant ID cannot be empty.", nameof(tenantId));
+            throw new ArgumentException("Organization ID cannot be empty.", nameof(organizationId));
         }
 
         if (propertyId == Guid.Empty)
@@ -66,7 +66,7 @@ public sealed class Unit : ITenantScoped
         return new Unit
         {
             Id = Guid.NewGuid(),
-            TenantId = tenantId,
+            OrganizationId = organizationId,
             PropertyId = propertyId,
             UnitNumber = unitNumber.Trim(),
             FloorNumber = floorNumber,

@@ -6,7 +6,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Properties.Update;
 
 public sealed record UpdatePropertyCommand(
-    Guid TenantId,
+    Guid OrganizationId,
     Guid PropertyId,
     string Name,
     string Address,

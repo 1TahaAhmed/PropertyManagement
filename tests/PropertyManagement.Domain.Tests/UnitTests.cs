@@ -10,11 +10,11 @@ public sealed class UnitTests
     [Fact]
     public void Create_ShouldSucceed_WhenValidInputs()
     {
-        var tenantId = Guid.NewGuid();
+        var organizationId = Guid.NewGuid();
         var propertyId = Guid.NewGuid();
 
         var unit = Unit.Create(
-            tenantId,
+            organizationId,
             propertyId,
             "101",
             UnitType.Apartment,

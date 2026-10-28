@@ -7,7 +7,7 @@ public sealed class UpdateUnitCommandValidator : AbstractValidator<UpdateUnitCom
     public UpdateUnitCommandValidator()
     {
         RuleFor(c => c.UnitId).NotEmpty();
-        RuleFor(c => c.TenantId).NotEmpty();
+        RuleFor(c => c.OrganizationId).NotEmpty();
         RuleFor(c => c.UnitNumber).NotEmpty().MaximumLength(50);
         RuleFor(c => c.Type).IsInEnum();
         RuleFor(c => c.MarketRent).GreaterThanOrEqualTo(0);

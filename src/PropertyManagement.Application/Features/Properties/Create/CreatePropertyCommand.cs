@@ -7,7 +7,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Properties.Create;
 
 public sealed record CreatePropertyCommand(
-    Guid TenantId,
+    Guid OrganizationId,
     string Name,
     string Address,
     PropertyType Type,

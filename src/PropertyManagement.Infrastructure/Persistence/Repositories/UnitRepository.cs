@@ -7,10 +7,10 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitRepository
 {
-    public Task<Unit?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    public Task<Unit?> GetByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return dbContext.Units
-            .SingleOrDefaultAsync(u => u.Id == id && u.TenantId == tenantId, cancellationToken);
+            .SingleOrDefaultAsync(u => u.Id == id && u.OrganizationId == organizationId, cancellationToken);
     }
 
     public Task<Unit?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -19,10 +19,10 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
             .SingleOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
-    public Task<bool> ExistsByNumberAsync(Guid tenantId, Guid propertyId, string unitNumber, CancellationToken cancellationToken = default)
+    public Task<bool> ExistsByNumberAsync(Guid organizationId, Guid propertyId, string unitNumber, CancellationToken cancellationToken = default)
     {
         return dbContext.Units
-            .AnyAsync(u => u.TenantId == tenantId && u.PropertyId == propertyId && u.UnitNumber == unitNumber, cancellationToken);
+            .AnyAsync(u => u.OrganizationId == organizationId && u.PropertyId == propertyId && u.UnitNumber == unitNumber, cancellationToken);
     }
 
     public async Task AddAsync(Unit unit, CancellationToken cancellationToken = default)
@@ -41,7 +41,7 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
     }
 
     public async Task<(IReadOnlyList<Unit> Items, int TotalCount)> GetPagedByPropertyAsync(
-        Guid tenantId,
+        Guid organizationId,
         Guid propertyId,
         UnitOperationalStatus? status,
         UnitType? type,
@@ -53,7 +53,7 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
     {
         var query = dbContext.Units
             .AsNoTracking()
-            .Where(u => u.TenantId == tenantId && u.PropertyId == propertyId);
+            .Where(u => u.OrganizationId == organizationId && u.PropertyId == propertyId);
 
         if (status.HasValue)
         {

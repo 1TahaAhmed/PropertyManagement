@@ -26,7 +26,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new CreatePropertyCommand(
-            TenantId: request.TenantId,
+            OrganizationId: request.OrganizationId,
             Name: request.Name,
             Address: request.Address,
             Type: request.Type,
@@ -46,10 +46,10 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid organizationId,
         CancellationToken cancellationToken)
     {
-        var query = new GetPropertyByIdQuery(tenantId, id);
+        var query = new GetPropertyByIdQuery(organizationId, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -63,7 +63,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     [ProducesResponseType(typeof(PagedList<PropertyResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetPaged(
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid organizationId,
         [FromQuery] string? searchTerm,
         [FromQuery] PropertyStatus? status,
         [FromQuery] PropertyType? type,
@@ -71,7 +71,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetPropertiesQuery(tenantId, searchTerm, status, type, pageNumber, pageSize);
+        var query = new GetPropertiesQuery(organizationId, searchTerm, status, type, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -92,7 +92,7 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         CancellationToken cancellationToken)
     {
         var command = new UpdatePropertyCommand(
-            TenantId: request.TenantId,
+            OrganizationId: request.OrganizationId,
             PropertyId: id,
             Name: request.Name,
             Address: request.Address,
@@ -114,10 +114,10 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Archive(
         Guid id,
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid organizationId,
         CancellationToken cancellationToken)
     {
-        var command = new ArchivePropertyCommand(id, tenantId);
+        var command = new ArchivePropertyCommand(id, organizationId);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

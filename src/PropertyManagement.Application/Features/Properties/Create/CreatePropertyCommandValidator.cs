@@ -6,9 +6,9 @@ public sealed class CreatePropertyCommandValidator : AbstractValidator<CreatePro
 {
     public CreatePropertyCommandValidator()
     {
-        RuleFor(c => c.TenantId)
+        RuleFor(c => c.OrganizationId)
             .NotEmpty()
-            .WithMessage("Tenant ID is required.");
+            .WithMessage("Organization ID is required.");
 
         RuleFor(c => c.Name)
             .NotEmpty()

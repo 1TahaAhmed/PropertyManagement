@@ -17,7 +17,7 @@ public sealed class UpdateUnitCommandHandler(
     public async Task<Result<UnitResponse>> Handle(UpdateUnitCommand request, CancellationToken cancellationToken)
     {
         var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
-        if (unit is null || unit.TenantId != request.TenantId)
+        if (unit is null || unit.OrganizationId != request.OrganizationId)
         {
             return Result<UnitResponse>.Failure(new Error(
                 Code: "Unit.NotFound",
@@ -40,7 +40,7 @@ public sealed class UpdateUnitCommandHandler(
         if (!string.Equals(unit.UnitNumber, trimmedUnitNumber, StringComparison.OrdinalIgnoreCase))
         {
             var numberTaken = await unitRepository.ExistsByNumberAsync(
-                unit.TenantId,
+                unit.OrganizationId,
                 unit.PropertyId,
                 trimmedUnitNumber,
                 cancellationToken);
@@ -85,7 +85,7 @@ public sealed class UpdateUnitCommandHandler(
 
         return Result<UnitResponse>.Success(new UnitResponse(
             unit.Id,
-            unit.TenantId,
+            unit.OrganizationId,
             unit.PropertyId,
             unit.UnitNumber,
             unit.FloorNumber,

@@ -16,7 +16,7 @@ public sealed class ChangeUnitStatusCommandHandler(
     public async Task<Result> Handle(ChangeUnitStatusCommand request, CancellationToken cancellationToken)
     {
         var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
-        if (unit is null || unit.TenantId != request.TenantId)
+        if (unit is null || unit.OrganizationId != request.OrganizationId)
         {
             return Result.Failure(new Error(
                 Code: "Unit.NotFound",

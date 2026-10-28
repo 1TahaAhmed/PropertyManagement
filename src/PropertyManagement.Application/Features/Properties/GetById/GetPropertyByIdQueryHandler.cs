@@ -12,7 +12,7 @@ public sealed class GetPropertyByIdQueryHandler(
 {
     public async Task<Result<PropertyResponse>> Handle(GetPropertyByIdQuery request, CancellationToken cancellationToken)
     {
-        var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.TenantId, cancellationToken);
+        var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.OrganizationId, cancellationToken);
         if (property is null)
         {
             return Result<PropertyResponse>.Failure(new Error(
@@ -23,7 +23,7 @@ public sealed class GetPropertyByIdQueryHandler(
 
         return Result<PropertyResponse>.Success(new PropertyResponse(
             property.Id,
-            property.TenantId,
+            property.OrganizationId,
             property.Name,
             property.Address,
             property.Description,

@@ -6,7 +6,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Units.Update;
 
 public sealed record UpdateUnitCommand(
-    Guid TenantId,
+    Guid OrganizationId,
     Guid UnitId,
     string UnitNumber,
     UnitType Type,

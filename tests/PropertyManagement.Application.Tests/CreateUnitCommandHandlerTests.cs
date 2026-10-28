@@ -28,11 +28,11 @@ public sealed class CreateUnitCommandHandlerTests
     public async Task Handle_ShouldReturnNotFound_WhenPropertyDoesNotExist()
     {
         var propertyId = Guid.NewGuid();
-        var tenantId = Guid.NewGuid();
+        var organizationId = Guid.NewGuid();
         _propertyRepository.GetByIdAsync(propertyId, Arg.Any<CancellationToken>())
             .Returns((Property?)null);
 
-        var command = new CreateUnitCommand(tenantId, propertyId, "101", UnitType.Apartment, 5000);
+        var command = new CreateUnitCommand(organizationId, propertyId, "101", UnitType.Apartment, 5000);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -41,17 +41,17 @@ public sealed class CreateUnitCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnNotFound_WhenPropertyBelongsToDifferentTenant()
+    public async Task Handle_ShouldReturnNotFound_WhenPropertyBelongsToDifferentOrganization()
     {
         var propertyId = Guid.NewGuid();
-        var propertyTenant = Guid.NewGuid();
-        var attackingTenant = Guid.NewGuid();
+        var propertyOrganization = Guid.NewGuid();
+        var attackingOrganization = Guid.NewGuid();
 
-        var property = Property.Create(propertyTenant, "Tower", "Cairo", PropertyType.Residential, FixedNow);
+        var property = Property.Create(propertyOrganization, "Tower", "Cairo", PropertyType.Residential, FixedNow);
         _propertyRepository.GetByIdAsync(propertyId, Arg.Any<CancellationToken>())
             .Returns(property);
 
-        var command = new CreateUnitCommand(attackingTenant, propertyId, "101", UnitType.Apartment, 5000);
+        var command = new CreateUnitCommand(attackingOrganization, propertyId, "101", UnitType.Apartment, 5000);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -62,14 +62,14 @@ public sealed class CreateUnitCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldReturnValidation_WhenPropertyIsArchived()
     {
-        var tenantId = Guid.NewGuid();
-        var property = Property.Create(tenantId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
+        var organizationId = Guid.NewGuid();
+        var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
         property.Archive(FixedNow);
 
         _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
             .Returns(property);
 
-        var command = new CreateUnitCommand(tenantId, property.Id, "101", UnitType.Apartment, 5000);
+        var command = new CreateUnitCommand(organizationId, property.Id, "101", UnitType.Apartment, 5000);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -80,16 +80,16 @@ public sealed class CreateUnitCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldReturnConflict_WhenUnitNumberAlreadyExists()
     {
-        var tenantId = Guid.NewGuid();
-        var property = Property.Create(tenantId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
+        var organizationId = Guid.NewGuid();
+        var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
 
         _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
             .Returns(property);
 
-        _unitRepository.ExistsByNumberAsync(tenantId, property.Id, "101", Arg.Any<CancellationToken>())
+        _unitRepository.ExistsByNumberAsync(organizationId, property.Id, "101", Arg.Any<CancellationToken>())
             .Returns(true);
 
-        var command = new CreateUnitCommand(tenantId, property.Id, " 101 ", UnitType.Apartment, 5000);
+        var command = new CreateUnitCommand(organizationId, property.Id, " 101 ", UnitType.Apartment, 5000);
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
@@ -100,16 +100,16 @@ public sealed class CreateUnitCommandHandlerTests
     [Fact]
     public async Task Handle_ShouldSucceed_WhenInputsAreValid()
     {
-        var tenantId = Guid.NewGuid();
-        var property = Property.Create(tenantId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
+        var organizationId = Guid.NewGuid();
+        var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
 
         _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
             .Returns(property);
 
-        _unitRepository.ExistsByNumberAsync(tenantId, property.Id, "101", Arg.Any<CancellationToken>())
+        _unitRepository.ExistsByNumberAsync(organizationId, property.Id, "101", Arg.Any<CancellationToken>())
             .Returns(false);
 
-        var command = new CreateUnitCommand(tenantId, property.Id, "101", UnitType.Apartment, 5000, 1, 2, 1, 90, "Nice view");
+        var command = new CreateUnitCommand(organizationId, property.Id, "101", UnitType.Apartment, 5000, 1, 2, 1, 90, "Nice view");
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);

@@ -6,9 +6,9 @@ public sealed class GetUnitsByPropertyQueryValidator : AbstractValidator<GetUnit
 {
     public GetUnitsByPropertyQueryValidator()
     {
-        RuleFor(x => x.TenantId)
+        RuleFor(x => x.OrganizationId)
             .NotEmpty()
-            .WithMessage("Tenant ID cannot be empty.");
+            .WithMessage("Organization ID cannot be empty.");
 
         RuleFor(x => x.PropertyId)
             .NotEmpty()

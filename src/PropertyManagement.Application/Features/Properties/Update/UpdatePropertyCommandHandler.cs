@@ -17,7 +17,7 @@ public sealed class UpdatePropertyCommandHandler(
     {
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
         
-        if (property is null || property.TenantId != request.TenantId)
+        if (property is null || property.OrganizationId != request.OrganizationId)
         {
             return Result<PropertyResponse>.Failure(new Error(
                 Code: "Property.NotFound",
@@ -36,7 +36,7 @@ public sealed class UpdatePropertyCommandHandler(
         var trimmedName = request.Name.Trim();
         if (!string.Equals(property.Name, trimmedName, StringComparison.OrdinalIgnoreCase))
         {
-            var nameExists = await propertyRepository.ExistsByNameAsync(property.TenantId, trimmedName, excludePropertyId: request.PropertyId,cancellationToken);
+            var nameExists = await propertyRepository.ExistsByNameAsync(property.OrganizationId, trimmedName, excludePropertyId: request.PropertyId,cancellationToken);
             if (nameExists)
             {
                 return Result<PropertyResponse>.Failure(new Error(
@@ -67,7 +67,7 @@ public sealed class UpdatePropertyCommandHandler(
 
         return Result<PropertyResponse>.Success(new PropertyResponse(
             property.Id,
-            property.TenantId,
+            property.OrganizationId,
             property.Name,
             property.Address,
             property.Description,

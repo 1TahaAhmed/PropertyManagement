@@ -12,7 +12,7 @@ public sealed class GetUnitsByPropertyQueryHandler(IUnitRepository unitRepositor
     public async Task<Result<PagedList<UnitResponse>>> Handle(GetUnitsByPropertyQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await unitRepository.GetPagedByPropertyAsync(
-            request.TenantId,
+            request.OrganizationId,
             request.PropertyId,
             request.Status,
             request.Type,
@@ -24,7 +24,7 @@ public sealed class GetUnitsByPropertyQueryHandler(IUnitRepository unitRepositor
 
         var responseItems = items.Select(u => new UnitResponse(
             u.Id,
-            u.TenantId,
+            u.OrganizationId,
             u.PropertyId,
             u.UnitNumber,
             u.FloorNumber,

@@ -6,7 +6,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Units.Create;
 
 public sealed record CreateUnitCommand(
-    Guid TenantId,
+    Guid OrganizationId,
     Guid PropertyId,
     string UnitNumber,
     UnitType Type,

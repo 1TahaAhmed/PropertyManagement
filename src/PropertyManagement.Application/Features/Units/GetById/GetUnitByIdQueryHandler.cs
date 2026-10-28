@@ -11,7 +11,7 @@ public sealed class GetUnitByIdQueryHandler(IUnitRepository unitRepository)
 {
     public async Task<Result<UnitResponse>> Handle(GetUnitByIdQuery request, CancellationToken cancellationToken)
     {
-        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.TenantId, cancellationToken);
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.OrganizationId, cancellationToken);
         if (unit is null)
         {
             return Result<UnitResponse>.Failure(new Error(
@@ -22,7 +22,7 @@ public sealed class GetUnitByIdQueryHandler(IUnitRepository unitRepository)
 
         return Result<UnitResponse>.Success(new UnitResponse(
             unit.Id,
-            unit.TenantId,
+            unit.OrganizationId,
             unit.PropertyId,
             unit.UnitNumber,
             unit.FloorNumber,

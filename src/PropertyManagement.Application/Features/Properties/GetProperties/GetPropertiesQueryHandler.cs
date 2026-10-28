@@ -13,7 +13,7 @@ public sealed class GetPropertiesQueryHandler(IPropertyRepository propertyReposi
     public async Task<Result<PagedList<PropertyResponse>>> Handle(GetPropertiesQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await propertyRepository.GetPagedAsync(
-            request.TenantId,
+            request.OrganizationId,
             request.SearchTerm,
             request.Status,
             request.Type,
@@ -23,7 +23,7 @@ public sealed class GetPropertiesQueryHandler(IPropertyRepository propertyReposi
 
         var responseItems = items.Select(p => new PropertyResponse(
             p.Id,
-            p.TenantId,
+            p.OrganizationId,
             p.Name,
             p.Address,
             p.Description,

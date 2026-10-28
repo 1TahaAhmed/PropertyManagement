@@ -4,4 +4,4 @@ using PropertyManagement.Application.Features.Units.Response;
 
 namespace PropertyManagement.Application.Features.Units.GetById;
 
-public sealed record GetUnitByIdQuery(Guid TenantId, Guid UnitId) : IRequest<Result<UnitResponse>>;
+public sealed record GetUnitByIdQuery(Guid OrganizationId, Guid UnitId) : IRequest<Result<UnitResponse>>;

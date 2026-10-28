@@ -7,7 +7,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Properties.GetProperties;
 
 public sealed record GetPropertiesQuery(
-    Guid TenantId,
+    Guid OrganizationId,
     string? SearchTerm = null,
     PropertyStatus? Status = null,
     PropertyType? Type = null,

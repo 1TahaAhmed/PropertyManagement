@@ -7,10 +7,10 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
 {
-    public Task<Property?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    public Task<Property?> GetByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
-            .SingleOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, cancellationToken);
+            .SingleOrDefaultAsync(p => p.Id == id && p.OrganizationId == organizationId, cancellationToken);
     }
 
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -20,14 +20,14 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     }
 
     public Task<bool> ExistsByNameAsync(
-        Guid tenantId,
+        Guid organizationId,
         string name,
         Guid? excludePropertyId,
         CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
             .AnyAsync(p =>
-                p.TenantId == tenantId &&
+                p.OrganizationId == organizationId &&
                 p.Name == name &&
                 (!excludePropertyId.HasValue || p.Id != excludePropertyId.Value),
                 cancellationToken);
@@ -49,7 +49,7 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     }
 
     public async Task<(IReadOnlyList<Property> Items, int TotalCount)> GetPagedAsync(
-        Guid tenantId,
+        Guid organizationId,
         string? searchTerm,
         PropertyStatus? status,
         PropertyType? type,
@@ -59,7 +59,7 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     {
         var query = dbContext.Properties
             .AsNoTracking()
-            .Where(p => p.TenantId == tenantId);
+            .Where(p => p.OrganizationId == organizationId);
 
         if (!string.IsNullOrWhiteSpace(searchTerm))
         {

@@ -7,7 +7,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 
 public sealed record GetUnitsByPropertyQuery(
-    Guid TenantId,
+    Guid OrganizationId,
     Guid PropertyId,
     UnitOperationalStatus? Status = null,
     UnitType? Type = null,
