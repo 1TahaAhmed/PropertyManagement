@@ -40,6 +40,6 @@ public sealed class InvitationConfiguration : IEntityTypeConfiguration<Invitatio
         builder.HasOne<Organization>()
             .WithMany()
             .HasForeignKey(i => i.OrganizationId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

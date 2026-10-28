@@ -42,7 +42,17 @@ public sealed class RegisterOrganizationCommandHandler(
 
         var utcNow = clock.UtcNow;
 
-        var organization = Organization.Create(trimmedName, utcNow);
+        var baseSlug = Organization.GenerateSlug(trimmedName);
+        var uniqueSlug = baseSlug;
+        var suffix = 1;
+
+        while (await organizationRepository.ExistsByIdentifierAsync(uniqueSlug, cancellationToken))
+        {
+            suffix++;
+            uniqueSlug = $"{baseSlug}-{suffix}";
+        }
+
+        var organization = Organization.Create(trimmedName, utcNow, customSlug: uniqueSlug);
 
         var identifierExists = await organizationRepository.ExistsByIdentifierAsync(organization.Identifier, cancellationToken);
         if (identifierExists)

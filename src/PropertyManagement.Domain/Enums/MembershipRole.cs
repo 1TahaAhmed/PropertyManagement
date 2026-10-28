@@ -10,6 +10,5 @@ namespace PropertyManagement.Domain.Enums
         Admin = 2,
         PropertyManager = 3,
         Staff = 4,
-        Resident = 5
     }
 }

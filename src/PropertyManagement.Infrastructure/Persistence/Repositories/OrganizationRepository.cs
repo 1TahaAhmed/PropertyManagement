@@ -73,4 +73,12 @@ public sealed class OrganizationRepository(ApplicationDbContext context) : IOrga
     {
         await context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<int> CountActiveOwnersAsync(Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        return await context.OrganizationMembers
+            .CountAsync(m => m.OrganizationId == organizationId
+                          && m.Role == MembershipRole.Owner
+                          && m.Status == MembershipStatus.Active, cancellationToken);
+    }
 }

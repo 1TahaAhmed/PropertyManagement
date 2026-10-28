@@ -13,5 +13,6 @@ public interface IOrganizationRepository
     Task AddMemberAsync(OrganizationMember member, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<OrganizationMember>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<(Organization Organization, List<MembershipRole> Roles)>> GetUserOrganizationsAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<int> CountActiveOwnersAsync(Guid organizationId, CancellationToken cancellationToken = default);
     Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }

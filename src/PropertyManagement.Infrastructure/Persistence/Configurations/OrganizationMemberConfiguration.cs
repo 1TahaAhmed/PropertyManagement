@@ -26,7 +26,7 @@ public sealed class OrganizationMemberConfiguration : IEntityTypeConfiguration<O
 
         builder.Property(m => m.JoinedAt).IsRequired();
 
-        builder.HasIndex(m => new { m.OrganizationId, m.UserId, m.Role }).IsUnique();
+        builder.HasIndex(m => new { m.OrganizationId, m.UserId }).IsUnique();
         builder.HasIndex(m => m.UserId);
 
         builder.HasOne(m => m.Organization)

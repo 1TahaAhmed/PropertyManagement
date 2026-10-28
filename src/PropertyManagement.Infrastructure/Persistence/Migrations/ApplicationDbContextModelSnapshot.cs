@@ -359,7 +359,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("OrganizationId", "UserId", "Role")
+                    b.HasIndex("OrganizationId", "UserId")
                         .IsUnique();
 
                     b.ToTable("OrganizationMembers", (string)null);
@@ -621,7 +621,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
                     b.HasOne("PropertyManagement.Domain.Entities.Organizations.Organization", null)
                         .WithMany()
                         .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
