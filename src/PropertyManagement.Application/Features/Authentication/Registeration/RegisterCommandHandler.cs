@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Common.Results;
@@ -20,7 +20,8 @@ public sealed class RegisterCommandHandler(
             request.Address,
             request.Email,
             request.Password,
-            cancellationToken);
+            phoneNumber: null,
+            cancellationToken: cancellationToken);
 
         if (identityResult.IsFailure)
         {
@@ -38,6 +39,7 @@ public sealed class RegisterCommandHandler(
 
         if (codeIssueResult.IsFailure)
         {
+            await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
             return Result<RegisterResponse>.Failure(
                 codeIssueResult.Errors.ToArray());
         }
