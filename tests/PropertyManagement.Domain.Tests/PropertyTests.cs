@@ -15,7 +15,7 @@ public sealed class PropertyTests
 
         var property = Property.Create(tenantId, "Sunrise Tower", ValidAddress, PropertyType.Residential, FixedNow);
 
-        Assert.NotEqual(Guid.Empty, property.Id);
+        Assert.NotEqual(Guid.Empty, property.OrganizationId);
         Assert.Equal(tenantId, property.TenantId);
         Assert.Equal("Sunrise Tower", property.Name);
         Assert.Equal(ValidAddress, property.Address);

@@ -10,9 +10,9 @@ public sealed class UnitConfiguration : IEntityTypeConfiguration<Unit>
     {
         builder.ToTable("Units");
 
-        builder.HasKey(u => u.Id);
+        builder.HasKey(u => u.OrganizationId);
 
-        builder.Property(u => u.Id)
+        builder.Property(u => u.OrganizationId)
             .ValueGeneratedNever();
 
         builder.Property(u => u.TenantId)

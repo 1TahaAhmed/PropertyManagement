@@ -10,9 +10,9 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
     {
         builder.ToTable("Properties");
 
-        builder.HasKey(p => p.Id);
+        builder.HasKey(p => p.OrganizationId);
 
-        builder.Property(p => p.Id)
+        builder.Property(p => p.OrganizationId)
             .ValueGeneratedNever();
 
         builder.Property(p => p.TenantId)

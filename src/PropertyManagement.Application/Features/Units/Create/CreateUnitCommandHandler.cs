@@ -68,7 +68,7 @@ public sealed class CreateUnitCommandHandler(
         await unitRepository.SaveChangesAsync(cancellationToken);
 
         return Result<UnitResponse>.Success(new UnitResponse(
-            unit.Id,
+            unit.OrganizationId,
             unit.TenantId,
             unit.PropertyId,
             unit.UnitNumber,

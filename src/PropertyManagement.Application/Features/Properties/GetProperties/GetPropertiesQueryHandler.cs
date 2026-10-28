@@ -22,7 +22,7 @@ public sealed class GetPropertiesQueryHandler(IPropertyRepository propertyReposi
             cancellationToken);
 
         var responseItems = items.Select(p => new PropertyResponse(
-            p.Id,
+            p.OrganizationId,
             p.TenantId,
             p.Name,
             p.Address,

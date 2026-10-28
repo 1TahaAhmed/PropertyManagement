@@ -38,7 +38,7 @@ public sealed class CreatePropertyCommandHandler(
         await propertyRepository.SaveChangesAsync(cancellationToken);
 
         return Result<PropertyResponse>.Success(new PropertyResponse(
-            property.Id,
+            property.OrganizationId,
             property.TenantId,
             property.Name,
             property.Address,
