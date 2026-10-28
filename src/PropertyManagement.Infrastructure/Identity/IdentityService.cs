@@ -245,4 +245,68 @@ public sealed class IdentityService(
         return await userManager.Users
         .AnyAsync(u => u.Id == userId && u.EmailConfirmed, cancellationToken);
     }
+
+    public async Task<Result<string>> GeneratePasswordResetTokenAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            return Result<string>.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            return Result<string>.Failure(
+                new Error(
+                    Code: "Identity.EmailNotConfirmed",
+                    Message: "The email address is not confirmed.",
+                    Type: ErrorType.Failure));
+        }
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        return Result<string>.Success(token);
+    }
+
+
+    public async Task<Result> ResetPasswordAsync(
+        string email,
+        string token,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {   
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            return Result.Failure(
+                new Error(
+                    Code: "Identity.InvalidResetToken",
+                    Message: "Invalid email or reset token.",
+                    Type: ErrorType.Validation));
+        }
+
+        var identityResult = await userManager.ResetPasswordAsync(user, token, newPassword);
+        if (identityResult.Succeeded)
+        {
+            return Result.Success();
+        }
+
+        var errors = identityResult.Errors
+            .Select(error => new Error(
+                Code: $"Identity.{error.Code}",
+                Message: error.Description,
+                Type: MapIdentityErrorType(error.Code)))
+            .ToArray();
+
+        return Result.Failure(errors);
+    }
 }

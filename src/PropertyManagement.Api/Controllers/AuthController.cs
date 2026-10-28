@@ -5,7 +5,9 @@ using ApiRegisterResponse =
 using PropertyManagement.Api.Extensions;
 using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Api.Contracts.Authentication;
-
+using PropertyManagement.Api.Contracts.Authentication.PasswordReset;
+using PropertyManagement.Application.Features.Authentication.PasswordReset.ForgotPassword;
+using PropertyManagement.Application.Features.Authentication.PasswordReset.ResetPassword;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -51,5 +53,53 @@ public sealed class AuthController(ISender sender) : ControllerBase
         return StatusCode(
             StatusCodes.Status201Created,
             response);
+    }
+
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ForgotPasswordCommand(request.Email);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new
+        {
+            message = "If an account with that email exists and is confirmed, a password reset token has been sent."
+        });
+    }
+
+    [HttpPost("reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ResetPasswordCommand(
+            Email: request.Email,
+            Token: request.Token,
+            NewPassword: request.NewPassword,
+            ConfirmPassword: request.ConfirmPassword);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new
+        {
+            message = "Password has been reset successfully. You can now log in with your new password."
+        });
     }
 }

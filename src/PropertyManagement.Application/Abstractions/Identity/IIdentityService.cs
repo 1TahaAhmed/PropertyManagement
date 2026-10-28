@@ -37,5 +37,17 @@ namespace PropertyManagement.Application.Abstractions.Identity
         Task<bool> ExistsAsync(
         Guid userId,
         CancellationToken cancellationToken = default);
+
+        Task<Result<string>> GeneratePasswordResetTokenAsync(
+            string email,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<Result> ResetPasswordAsync(
+            string email,
+            string token,
+            string newPassowrd,
+            CancellationToken cancellationToken = default
+        );
     }
 }
