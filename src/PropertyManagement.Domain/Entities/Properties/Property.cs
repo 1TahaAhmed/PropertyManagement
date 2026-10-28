@@ -7,7 +7,7 @@ public sealed class Property : ITenantScoped
 {
     private Property() { }
 
-    public Guid Id { get; private set; }
+    public Guid OrganizationId { get; private set; }
     public Guid TenantId { get; private set; }
     public string Name { get; private set; } = string.Empty;
     public string Address { get; private set; } = string.Empty;
@@ -40,7 +40,7 @@ public sealed class Property : ITenantScoped
 
         return new Property
         {
-            Id = Guid.NewGuid(),
+            OrganizationId = Guid.NewGuid(),
             TenantId = tenantId,
             Name = name.Trim(),
             Address = address.Trim(),
