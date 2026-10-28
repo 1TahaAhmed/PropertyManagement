@@ -1,4 +1,4 @@
-﻿using FluentValidation.TestHelper;
+using FluentValidation.TestHelper;
 using PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 
 namespace PropertyManagement.Application.Tests;
@@ -8,9 +8,17 @@ public sealed class GetUnitsByPropertyQueryValidatorTests
     private readonly GetUnitsByPropertyQueryValidator _validator = new();
 
     [Fact]
+    public void Validate_ShouldFail_WhenTenantIdIsEmpty()
+    {
+        var query = new GetUnitsByPropertyQuery(Guid.Empty, Guid.NewGuid(), null, null, null, null, 1, 10);
+        var result = _validator.TestValidate(query);
+        result.ShouldHaveValidationErrorFor(x => x.TenantId);
+    }
+
+    [Fact]
     public void Validate_ShouldFail_WhenPropertyIdIsEmpty()
     {
-        var query = new GetUnitsByPropertyQuery(Guid.Empty, null, null, null, null, 1, 10);
+        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), Guid.Empty, null, null, null, null, 1, 10);
         var result = _validator.TestValidate(query);
         result.ShouldHaveValidationErrorFor(x => x.PropertyId);
     }
@@ -20,7 +28,7 @@ public sealed class GetUnitsByPropertyQueryValidatorTests
     [InlineData(-1)]
     public void Validate_ShouldFail_WhenPageNumberIsInvalid(int invalidPage)
     {
-        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), null, null, null, null, invalidPage, 10);
+        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), Guid.NewGuid(), null, null, null, null, invalidPage, 10);
         var result = _validator.TestValidate(query);
         result.ShouldHaveValidationErrorFor(x => x.PageNumber);
     }
@@ -30,7 +38,7 @@ public sealed class GetUnitsByPropertyQueryValidatorTests
     [InlineData(101)]
     public void Validate_ShouldFail_WhenPageSizeIsOutOfRange(int invalidSize)
     {
-        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), null, null, null, null, 1, invalidSize);
+        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), Guid.NewGuid(), null, null, null, null, 1, invalidSize);
         var result = _validator.TestValidate(query);
         result.ShouldHaveValidationErrorFor(x => x.PageSize);
     }
@@ -38,7 +46,7 @@ public sealed class GetUnitsByPropertyQueryValidatorTests
     [Fact]
     public void Validate_ShouldPass_WhenQueryIsValid()
     {
-        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), null, null, null, null, 1, 20);
+        var query = new GetUnitsByPropertyQuery(Guid.NewGuid(), Guid.NewGuid(), null, null, null, null, 1, 20);
         var result = _validator.TestValidate(query);
         result.ShouldNotHaveAnyValidationErrors();
     }
