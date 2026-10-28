@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
 
 namespace PropertyManagement.Infrastructure.Persistence.Configurations;
@@ -52,5 +53,9 @@ public sealed class PropertyConfiguration : IEntityTypeConfiguration<Property>
 
         builder.Property(p => p.RowVersion)
             .IsRowVersion();
+
+        builder.HasOne<Organization>().WithMany()
+            .HasForeignKey(p => p.OrganizationId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
