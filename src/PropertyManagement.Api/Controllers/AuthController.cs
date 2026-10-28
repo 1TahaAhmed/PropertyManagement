@@ -1,13 +1,15 @@
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ApiRegisterResponse =
-    PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
-using PropertyManagement.Api.Extensions;
-using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Api.Contracts.Authentication;
 using PropertyManagement.Api.Contracts.Authentication.PasswordReset;
+using PropertyManagement.Api.Extensions;
 using PropertyManagement.Application.Features.Authentication.PasswordReset.ForgotPassword;
 using PropertyManagement.Application.Features.Authentication.PasswordReset.ResetPassword;
+using PropertyManagement.Application.Features.Authentication.Registeration;
+using PropertyManagement.Application.Features.Authentication.RegisterCompany;
+using PropertyManagement.Application.Features.Companies.Register;
+using ApiRegisterResponse =
+    PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -101,5 +103,32 @@ public sealed class AuthController(ISender sender) : ControllerBase
         {
             message = "Password has been reset successfully. You can now log in with your new password."
         });
+    }
+
+    [HttpPost("register-company")]
+    [ProducesResponseType(typeof(RegisterCompanyResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RegisterCompany(
+       [FromBody] RegisterCompanyRequest request,
+       CancellationToken cancellationToken)
+    {
+        var command = new RegisterCompanyCommand(
+            CompanyName: request.CompanyName,
+            Email: request.Email,
+            Password: request.Password,
+            FirstName: request.FirstName,
+            LastName: request.LastName,
+            PhoneNumber: request.PhoneNumber,
+            Address: request.Address);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return StatusCode(StatusCodes.Status201Created, result.Value);
     }
 }
