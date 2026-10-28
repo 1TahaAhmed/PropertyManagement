@@ -2,5 +2,5 @@
 
 public interface ITenantScoped
 {
-    Guid OrganizationId { get; }
+    Guid TenantId { get; }
 }

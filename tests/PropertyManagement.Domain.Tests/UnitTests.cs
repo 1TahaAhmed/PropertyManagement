@@ -25,7 +25,7 @@ public sealed class UnitTests
             bathrooms: 1,
             squareMeters: 90);
 
-        Assert.NotEqual(Guid.Empty, unit.OrganizationId);
+        Assert.NotEqual(Guid.Empty, unit.Id);
         Assert.Equal("101", unit.UnitNumber);
         Assert.Equal(5000, unit.MarketRent);
         Assert.Equal(UnitOperationalStatus.Active, unit.Status);

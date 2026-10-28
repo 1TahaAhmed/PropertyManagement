@@ -21,7 +21,7 @@ public sealed class GetUnitByIdQueryHandler(IUnitRepository unitRepository)
         }
 
         return Result<UnitResponse>.Success(new UnitResponse(
-            unit.OrganizationId,
+            unit.Id,
             unit.TenantId,
             unit.PropertyId,
             unit.UnitNumber,

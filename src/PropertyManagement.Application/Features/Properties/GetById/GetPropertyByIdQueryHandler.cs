@@ -22,7 +22,7 @@ public sealed class GetPropertyByIdQueryHandler(
         }
 
         return Result<PropertyResponse>.Success(new PropertyResponse(
-            property.OrganizationId,
+            property.Id,
             property.TenantId,
             property.Name,
             property.Address,

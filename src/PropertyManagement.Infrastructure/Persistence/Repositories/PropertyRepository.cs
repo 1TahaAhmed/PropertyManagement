@@ -10,13 +10,13 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
     public Task<Property?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
-            .SingleOrDefaultAsync(p => p.OrganizationId == id && p.TenantId == tenantId, cancellationToken);
+            .SingleOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, cancellationToken);
     }
 
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties
-            .SingleOrDefaultAsync(p => p.OrganizationId == id, cancellationToken);
+            .SingleOrDefaultAsync(p => p.Id == id, cancellationToken);
     }
 
     public Task<bool> ExistsByNameAsync(
@@ -29,7 +29,7 @@ public sealed class PropertyRepository(ApplicationDbContext dbContext) : IProper
             .AnyAsync(p =>
                 p.TenantId == tenantId &&
                 p.Name == name &&
-                (!excludePropertyId.HasValue || p.OrganizationId != excludePropertyId.Value),
+                (!excludePropertyId.HasValue || p.Id != excludePropertyId.Value),
                 cancellationToken);
     }
 

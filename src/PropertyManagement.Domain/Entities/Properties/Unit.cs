@@ -7,7 +7,7 @@ public sealed class Unit : ITenantScoped
 {
     private Unit() { } 
 
-    public Guid OrganizationId { get; private set; }
+    public Guid Id { get; private set; }
     public Guid TenantId { get; private set; }
     public Guid PropertyId { get; private set; }
     public string UnitNumber { get; private set; } = string.Empty;
@@ -65,7 +65,7 @@ public sealed class Unit : ITenantScoped
 
         return new Unit
         {
-            OrganizationId = Guid.NewGuid(),
+            Id = Guid.NewGuid(),
             TenantId = tenantId,
             PropertyId = propertyId,
             UnitNumber = unitNumber.Trim(),

@@ -10,13 +10,13 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
     public Task<Unit?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
     {
         return dbContext.Units
-            .SingleOrDefaultAsync(u => u.OrganizationId == id && u.TenantId == tenantId, cancellationToken);
+            .SingleOrDefaultAsync(u => u.Id == id && u.TenantId == tenantId, cancellationToken);
     }
 
     public Task<Unit?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Units
-            .SingleOrDefaultAsync(u => u.OrganizationId == id, cancellationToken);
+            .SingleOrDefaultAsync(u => u.Id == id, cancellationToken);
     }
 
     public Task<bool> ExistsByNumberAsync(Guid tenantId, Guid propertyId, string unitNumber, CancellationToken cancellationToken = default)

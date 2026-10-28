@@ -23,7 +23,7 @@ public sealed class GetUnitsByPropertyQueryHandler(IUnitRepository unitRepositor
             cancellationToken);
 
         var responseItems = items.Select(u => new UnitResponse(
-            u.OrganizationId,
+            u.Id,
             u.TenantId,
             u.PropertyId,
             u.UnitNumber,
