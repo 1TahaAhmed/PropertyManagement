@@ -52,9 +52,5 @@ namespace PropertyManagement.Application.Abstractions.Identity
             Guid userId,
             CancellationToken cancellationToken = default
         );
-
-        Task<Result> DeleteUserAsync(
-            Guid userId,
-            CancellationToken cancellationToken = default);
     }
 }
