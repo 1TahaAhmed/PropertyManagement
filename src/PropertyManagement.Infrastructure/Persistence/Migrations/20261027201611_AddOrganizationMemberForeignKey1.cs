@@ -11,7 +11,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddForeignKey(
-                name: "FK_Invitations_Organizations_OrganizationId",
+                name: "FK_Invitations_Organizations_",
                 table: "Invitations",
                 column: "OrganizationId",
                 principalTable: "Organizations",

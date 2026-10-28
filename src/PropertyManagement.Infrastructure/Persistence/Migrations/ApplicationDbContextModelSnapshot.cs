@@ -271,7 +271,7 @@ namespace PropertyManagement.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid>("")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("RespondedAtUtc")
