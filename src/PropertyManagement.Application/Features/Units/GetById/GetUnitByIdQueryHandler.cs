@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
@@ -11,7 +11,7 @@ public sealed class GetUnitByIdQueryHandler(IUnitRepository unitRepository)
 {
     public async Task<Result<UnitResponse>> Handle(GetUnitByIdQuery request, CancellationToken cancellationToken)
     {
-        var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.TenantId, cancellationToken);
         if (unit is null)
         {
             return Result<UnitResponse>.Failure(new Error(

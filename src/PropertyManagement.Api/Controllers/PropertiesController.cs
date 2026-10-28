@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Properties;
 using PropertyManagement.Api.Extensions;
@@ -46,9 +46,10 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
+        [FromQuery] Guid tenantId,
         CancellationToken cancellationToken)
     {
-        var query = new GetPropertyByIdQuery(id);
+        var query = new GetPropertyByIdQuery(tenantId, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {

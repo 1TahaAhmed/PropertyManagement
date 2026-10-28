@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
@@ -9,10 +9,10 @@ namespace PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 public sealed class GetUnitsByPropertyQueryHandler(IUnitRepository unitRepository)
     : IRequestHandler<GetUnitsByPropertyQuery, Result<PagedList<UnitResponse>>>
 {
-
     public async Task<Result<PagedList<UnitResponse>>> Handle(GetUnitsByPropertyQuery request, CancellationToken cancellationToken)
     {
         var (items, totalCount) = await unitRepository.GetPagedByPropertyAsync(
+            request.TenantId,
             request.PropertyId,
             request.Status,
             request.Type,

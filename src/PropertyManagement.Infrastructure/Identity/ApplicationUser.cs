@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace PropertyManagement.Infrastructure.Identity;
 
@@ -21,7 +21,7 @@ public class ApplicationUser : IdentityUser<Guid>
         Address = address;
         Email = email;
         UserName = email;
-        PhoneNumber = phoneNumber?.Trim();
+        PhoneNumber = phoneNumber;
         CreatedAt = createdAt;
     }
 
@@ -47,7 +47,7 @@ public class ApplicationUser : IdentityUser<Guid>
             lastName.Trim(),
             address?.Trim() ?? string.Empty,
             email.Trim().ToLowerInvariant(),
-            phoneNumber,
+            phoneNumber?.Trim(),
             createdAt);
     }
 

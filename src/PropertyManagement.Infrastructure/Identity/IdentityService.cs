@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Identity;
@@ -277,7 +277,6 @@ public sealed class IdentityService(
         return Result<string>.Success(token);
     }
 
-
     public async Task<Result> ResetPasswordAsync(
         string email,
         string token,
@@ -312,31 +311,24 @@ public sealed class IdentityService(
         return Result.Failure(errors);
     }
 
-    public async Task<Result> DeleteUserAsync(
-    Guid userId,
-    CancellationToken cancellationToken = default)
+    public async Task<Result> DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
-            return Result.Failure(
-                new Error(
-                    Code: "Identity.UserNotFound",
-                    Message: "The user was not found.",
-                    Type: ErrorType.NotFound));
+            return Result.Success();
         }
 
         var identityResult = await userManager.DeleteAsync(user);
-
         if (!identityResult.Succeeded)
         {
             var errors = identityResult.Errors
                 .Select(error => new Error(
                     Code: $"Identity.{error.Code}",
                     Message: error.Description,
-                    Type: MapIdentityErrorType(error.Code)))
+                    Type: ErrorType.Failure))
                 .ToArray();
 
             return Result.Failure(errors);

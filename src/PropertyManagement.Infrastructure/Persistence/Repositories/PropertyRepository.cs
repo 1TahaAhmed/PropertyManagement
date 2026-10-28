@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Domain.Enums;
@@ -7,6 +7,12 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class PropertyRepository(ApplicationDbContext dbContext) : IPropertyRepository
 {
+    public Task<Property?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Properties
+            .SingleOrDefaultAsync(p => p.Id == id && p.TenantId == tenantId, cancellationToken);
+    }
+
     public Task<Property?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Properties

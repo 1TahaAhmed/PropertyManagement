@@ -1,11 +1,10 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Companies.Register;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Enums;
 
@@ -86,8 +85,9 @@ public sealed class RegisterCompanyCommandHandler(
 
             if (codeIssueResult.IsFailure)
             {
-                await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
-                return Result<RegisterCompanyResponse>.Failure(codeIssueResult.Errors.ToArray());
+                await identityService.DeleteUserAsync(identityUser.UserId, cancellationToken);
+                return Result<RegisterCompanyResponse>.Failure(
+                    codeIssueResult.Errors.ToArray());
             }
 
             var response = new RegisterCompanyResponse(
@@ -104,7 +104,7 @@ public sealed class RegisterCompanyCommandHandler(
         }
         catch
         {
-            await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
+            await identityService.DeleteUserAsync(identityUser.UserId, cancellationToken);
             throw;
         }
     }

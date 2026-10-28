@@ -1,7 +1,4 @@
-﻿using PropertyManagement.Application.Common.Results;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using PropertyManagement.Application.Common.Results;
 
 namespace PropertyManagement.Application.Abstractions.Identity
 {
@@ -36,8 +33,8 @@ namespace PropertyManagement.Application.Abstractions.Identity
             CancellationToken cancellationToken = default);
 
         Task<bool> ExistsAsync(
-        Guid userId,
-        CancellationToken cancellationToken = default);
+            Guid userId,
+            CancellationToken cancellationToken = default);
 
         Task<Result<string>> GeneratePasswordResetTokenAsync(
             string email,
@@ -47,7 +44,12 @@ namespace PropertyManagement.Application.Abstractions.Identity
         Task<Result> ResetPasswordAsync(
             string email,
             string token,
-            string newPassowrd,
+            string newPassword,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<Result> DeleteUserAsync(
+            Guid userId,
             CancellationToken cancellationToken = default
         );
 

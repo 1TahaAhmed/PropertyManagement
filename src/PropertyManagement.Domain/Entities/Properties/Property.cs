@@ -1,8 +1,9 @@
-﻿using PropertyManagement.Domain.Enums;
+using PropertyManagement.Domain.Common;
+using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Properties;
 
-public sealed class Property
+public sealed class Property : ITenantScoped
 {
     private Property() { }
 

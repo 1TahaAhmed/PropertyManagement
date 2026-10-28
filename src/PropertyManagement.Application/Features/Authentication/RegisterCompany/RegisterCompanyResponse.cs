@@ -1,4 +1,4 @@
-﻿namespace PropertyManagement.Application.Features.Companies.Register;
+namespace PropertyManagement.Application.Features.Authentication.RegisterCompany;
 
 public sealed record RegisterCompanyResponse(
     Guid UserId,

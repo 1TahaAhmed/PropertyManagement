@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Units;
 using PropertyManagement.Api.Extensions;
@@ -53,9 +53,10 @@ public sealed class UnitsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
+        [FromQuery] Guid tenantId,
         CancellationToken cancellationToken)
     {
-        var query = new GetUnitByIdQuery(id);
+        var query = new GetUnitByIdQuery(tenantId, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -70,6 +71,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetByProperty(
         Guid propertyId,
+        [FromQuery] Guid tenantId,
         [FromQuery] UnitOperationalStatus? status,
         [FromQuery] UnitType? type,
         [FromQuery] decimal? minRent,
@@ -78,7 +80,7 @@ public sealed class UnitsController(ISender sender) : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetUnitsByPropertyQuery(propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
+        var query = new GetUnitsByPropertyQuery(tenantId, propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {

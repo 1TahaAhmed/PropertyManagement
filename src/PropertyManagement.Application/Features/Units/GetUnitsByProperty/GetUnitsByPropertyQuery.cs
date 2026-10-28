@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Common.Models;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Units.Response;
@@ -7,6 +7,7 @@ using PropertyManagement.Domain.Enums;
 namespace PropertyManagement.Application.Features.Units.GetUnitsByProperty;
 
 public sealed record GetUnitsByPropertyQuery(
+    Guid TenantId,
     Guid PropertyId,
     UnitOperationalStatus? Status = null,
     UnitType? Type = null,

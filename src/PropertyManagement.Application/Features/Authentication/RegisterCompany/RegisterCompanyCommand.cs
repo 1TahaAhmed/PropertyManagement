@@ -1,6 +1,5 @@
-﻿using MediatR;
+using MediatR;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Companies.Register;
 
 namespace PropertyManagement.Application.Features.Authentication.RegisterCompany;
 

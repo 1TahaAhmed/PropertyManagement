@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Domain.Enums;
@@ -7,6 +7,12 @@ namespace PropertyManagement.Infrastructure.Persistence.Repositories;
 
 public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitRepository
 {
+    public Task<Unit?> GetByIdAsync(Guid id, Guid tenantId, CancellationToken cancellationToken = default)
+    {
+        return dbContext.Units
+            .SingleOrDefaultAsync(u => u.Id == id && u.TenantId == tenantId, cancellationToken);
+    }
+
     public Task<Unit?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return dbContext.Units
@@ -35,6 +41,7 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
     }
 
     public async Task<(IReadOnlyList<Unit> Items, int TotalCount)> GetPagedByPropertyAsync(
+        Guid tenantId,
         Guid propertyId,
         UnitOperationalStatus? status,
         UnitType? type,
@@ -46,7 +53,7 @@ public sealed class UnitRepository(ApplicationDbContext dbContext) : IUnitReposi
     {
         var query = dbContext.Units
             .AsNoTracking()
-            .Where(u => u.PropertyId == propertyId);
+            .Where(u => u.TenantId == tenantId && u.PropertyId == propertyId);
 
         if (status.HasValue)
         {
