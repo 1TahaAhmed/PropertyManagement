@@ -45,8 +45,8 @@ public sealed class IdentityService(
             lastName,
             address,
             email,
-            phoneNumber,
-            createdAt);
+            createdAt,
+            phoneNumber);
 
         var identityResult = await userManager.CreateAsync(user, password);
 
@@ -64,10 +64,6 @@ public sealed class IdentityService(
 
         var result = new IdentityUserResult(
             UserId: user.Id,
-            Email: user.Email!,
-            FirstName: user.FirstName,
-            LastName: user.LastName,
-            EmailConfirmed: user.EmailConfirmed,
             CreatedAt: user.CreatedAt);
 
         return Result<IdentityUserResult>.Success(result);
