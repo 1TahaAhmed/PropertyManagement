@@ -83,7 +83,7 @@ public sealed class RegisterCompanyCommandHandlerTests
             command.PhoneNumber,
             Arg.Any<CancellationToken>())
             .Returns(Result<IdentityUserResult>.Failure(
-                new Error("Identity.PasswordTooShort", "Password is too short", ErrorType.Validation)));
+                new Error(Code: "Identity.PasswordTooShort", Message: "Password is too short", Type: ErrorType.Validation)));
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
@@ -122,7 +122,7 @@ public sealed class RegisterCompanyCommandHandlerTests
             .Returns(Result<IdentityUserResult>.Success(new IdentityUserResult(userId, FixedNow)));
 
         _codeIssuer.IssueAsync(userId, command.Email, command.FirstName, Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(new Error("Email.SendingFailed", "Failed to send email", ErrorType.Failure)));
+            .Returns(Result.Failure(new Error(Code: "Email.SendingFailed", Message: "Failed to send email", Type: ErrorType.Failure)));
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
