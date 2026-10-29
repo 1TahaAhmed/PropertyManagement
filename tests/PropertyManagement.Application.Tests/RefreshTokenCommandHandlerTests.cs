@@ -49,7 +49,7 @@ public sealed class RefreshTokenCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Authentication.InvalidRefreshToken", result.Errors[0].Code);
+        Assert.Equal("Authentication.InvalidRefreshToken", result.Errors.First().Code);
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class RefreshTokenCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Authentication.CompromisedRefreshToken", result.Errors[0].Code);
+        Assert.Equal("Authentication.CompromisedRefreshToken", result.Errors.First().Code);
 
         // Security assertion: All active tokens for the user MUST be revoked
         await _refreshTokenRepository.Received(1).RevokeAllUserTokensAsync(
@@ -97,7 +97,7 @@ public sealed class RefreshTokenCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Authentication.ExpiredRefreshToken", result.Errors[0].Code);
+        Assert.Equal("Authentication.ExpiredRefreshToken", result.Errors.First().Code);
     }
 
     [Fact]

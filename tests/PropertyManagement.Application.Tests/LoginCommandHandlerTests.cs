@@ -23,7 +23,6 @@ public sealed class LoginCommandHandlerTests
 
     private static readonly DateTime FixedNow = new(2026, 10, 29, 12, 0, 0, DateTimeKind.Utc);
     private static readonly Guid TestUserId = Guid.NewGuid();
-    private static readonly Guid TestOrgId = Guid.NewGuid();
 
     public LoginCommandHandlerTests()
     {
@@ -54,7 +53,7 @@ public sealed class LoginCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Identity.InvalidCredentials", result.Errors[0].Code);
+        Assert.Equal("Identity.InvalidCredentials", result.Errors.First().Code);
         await _refreshTokenRepository.DidNotReceive().AddAsync(Arg.Any<RefreshToken>(), Arg.Any<CancellationToken>());
     }
 
@@ -76,7 +75,7 @@ public sealed class LoginCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Identity.UserLockedOut", result.Errors[0].Code);
+        Assert.Equal("Identity.UserLockedOut", result.Errors.First().Code);
     }
 
     [Fact]
@@ -144,6 +143,6 @@ public sealed class LoginCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsFailure);
-        Assert.Equal("Authentication.NotOrganizationMember", result.Errors[0].Code);
+        Assert.Equal("Authentication.NotOrganizationMember", result.Errors.First().Code);
     }
 }
