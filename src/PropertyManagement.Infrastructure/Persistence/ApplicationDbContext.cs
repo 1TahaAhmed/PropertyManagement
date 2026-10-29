@@ -6,6 +6,7 @@ using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Domain.Entities.Authentication;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
+using PropertyManagement.Domain.Entities.Tenants;
 using PropertyManagement.Infrastructure.Identity;
 
 namespace PropertyManagement.Infrastructure.Persistence
@@ -39,6 +40,7 @@ namespace PropertyManagement.Infrastructure.Persistence
 
         public DbSet<Property> Properties => Set<Property>();
         public DbSet<Unit> Units => Set<Unit>();
+        public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<Organization> Organizations => Set<Organization>();
         public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
         public DbSet<Invitation> Invitations => Set<Invitation>();
