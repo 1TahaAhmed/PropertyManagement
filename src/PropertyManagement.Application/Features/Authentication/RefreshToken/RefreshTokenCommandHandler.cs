@@ -5,8 +5,8 @@ using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Domain.Entities.Authentication;
 using PropertyManagement.Domain.Enums;
+using RefreshTokenEntity = PropertyManagement.Domain.Entities.Authentication.RefreshToken;
 
 namespace PropertyManagement.Application.Features.Authentication.RefreshToken;
 
@@ -67,7 +67,7 @@ public sealed class RefreshTokenCommandHandler(
 
         existingToken.Revoke(clock.UtcNow, replacedByTokenHash: newTokenHash);
 
-        var newRefreshToken = PropertyManagement.Domain.Entities.Authentication.RefreshToken.Create(
+        var newRefreshToken = RefreshTokenEntity.Create(
             existingToken.UserId,
             newTokenHash,
             newExpiresAtUtc,
@@ -83,7 +83,7 @@ public sealed class RefreshTokenCommandHandler(
 
         if (userResult.IsFailure)
         {
-            return Result<RefreshTokenResponse>.Failure(userResult.Errors);
+            return Result<RefreshTokenResponse>.Failure(userResult.Errors.ToArray());
         }
 
         var user = userResult.Value;

@@ -5,8 +5,8 @@ using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Domain.Entities.Authentication;
 using PropertyManagement.Domain.Enums;
+using RefreshTokenEntity = PropertyManagement.Domain.Entities.Authentication.RefreshToken;
 
 namespace PropertyManagement.Application.Features.Authentication.Login;
 
@@ -28,7 +28,7 @@ public sealed class LoginCommandHandler(
 
         if (credentialsResult.IsFailure)
         {
-            return Result<LoginResponse>.Failure(credentialsResult.Errors);
+            return Result<LoginResponse>.Failure(credentialsResult.Errors.ToArray());
         }
 
         var user = credentialsResult.Value;
@@ -77,7 +77,7 @@ public sealed class LoginCommandHandler(
 
         var (plainRefreshToken, tokenHash, expiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
 
-        var refreshTokenEntity = RefreshToken.Create(
+        var refreshTokenEntity = RefreshTokenEntity.Create(
             user.UserId,
             tokenHash,
             expiresAtUtc,
