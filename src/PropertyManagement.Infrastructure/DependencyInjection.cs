@@ -145,6 +145,7 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IUnitRepository, UnitRepository>();
 
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+            services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
             return services;
         }

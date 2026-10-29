@@ -14,7 +14,8 @@ public sealed class RegisterCompanyCommandHandler(
     IIdentityService identityService,
     IOrganizationRepository organizationRepository,
     IEmailConfirmationCodeIssuer codeIssuer,
-    IClock clock)
+    IClock clock,
+    IUnitOfWork unitOfWork)
     : IRequestHandler<RegisterCompanyCommand, Result<RegisterCompanyResponse>>
 {
     public async Task<Result<RegisterCompanyResponse>> Handle(
@@ -22,7 +23,6 @@ public sealed class RegisterCompanyCommandHandler(
         CancellationToken cancellationToken)
     {
         var trimmedCompanyName = request.CompanyName.Trim();
-
         var companyExists = await organizationRepository.ExistsByNameAsync(
             trimmedCompanyName,
             cancellationToken);
@@ -34,6 +34,8 @@ public sealed class RegisterCompanyCommandHandler(
                 Message: $"A company with the name '{trimmedCompanyName}' already exists.",
                 Type: ErrorType.Conflict));
         }
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
 
         var identityResult = await identityService.RegisterAsync(
             request.FirstName,
@@ -53,59 +55,52 @@ public sealed class RegisterCompanyCommandHandler(
         var identityUser = identityResult.Value;
         var utcNow = clock.UtcNow;
 
-        try
+        var baseSlug = Organization.GenerateSlug(trimmedCompanyName);
+        var uniqueSlug = baseSlug;
+        var suffix = 1;
+
+        while (await organizationRepository.ExistsByIdentifierAsync(uniqueSlug, cancellationToken))
         {
-            var baseSlug = Organization.GenerateSlug(trimmedCompanyName);
-            var uniqueSlug = baseSlug;
-            var suffix = 1;
-
-            while (await organizationRepository.ExistsByIdentifierAsync(uniqueSlug, cancellationToken))
-            {
-                suffix++;
-                uniqueSlug = $"{baseSlug}-{suffix}";
-            }
-
-            var organization = Organization.Create(trimmedCompanyName, utcNow, customSlug: uniqueSlug);
-
-            var ownerMember = OrganizationMember.Create(
-                organization.Id,
-                identityUser.UserId,
-                MembershipRole.Owner,
-                utcNow);
-
-            await organizationRepository.AddAsync(organization, cancellationToken);
-            await organizationRepository.AddMemberAsync(ownerMember, cancellationToken);
-            await organizationRepository.SaveChangesAsync(cancellationToken);
-
-            var codeIssueResult = await codeIssuer.IssueAsync(
-                userId: identityUser.UserId,
-                email: request.Email,
-                firstName: request.FirstName,
-                cancellationToken: cancellationToken);
-
-            if (codeIssueResult.IsFailure)
-            {
-                await identityService.DeleteUserAsync(identityUser.UserId, cancellationToken);
-                return Result<RegisterCompanyResponse>.Failure(
-                    codeIssueResult.Errors.ToArray());
-            }
-
-            var response = new RegisterCompanyResponse(
-                UserId: identityUser.UserId,
-                Email: request.Email,
-                FirstName: request.FirstName,
-                LastName: request.LastName,
-                OrganizationId: organization.Id,
-                OrganizationName: organization.Name,
-                RequiresEmailConfirmation: true
-            );
-
-            return Result<RegisterCompanyResponse>.Success(response);
+            suffix++;
+            uniqueSlug = $"{baseSlug}-{suffix}";
         }
-        catch
+
+        var organization = Organization.Create(trimmedCompanyName, utcNow, customSlug: uniqueSlug);
+        var ownerMember = OrganizationMember.Create(
+            organization.Id,
+            identityUser.UserId,
+            MembershipRole.Owner,
+            utcNow);
+
+        await organizationRepository.AddAsync(organization, cancellationToken);
+        await organizationRepository.AddMemberAsync(ownerMember, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        var codeIssueResult = await codeIssuer.IssueAsync(
+            userId: identityUser.UserId,
+            email: request.Email,
+            firstName: request.FirstName,
+            cancellationToken: cancellationToken);
+
+        if (codeIssueResult.IsFailure)
         {
-            await identityService.DeleteUserAsync(identityUser.UserId, cancellationToken);
-            throw;
+            await transaction.RollbackAsync(cancellationToken);
+            return Result<RegisterCompanyResponse>.Failure(
+                codeIssueResult.Errors.ToArray());
         }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        var response = new RegisterCompanyResponse(
+            UserId: identityUser.UserId,
+            Email: request.Email,
+            FirstName: request.FirstName,
+            LastName: request.LastName,
+            OrganizationId: organization.Id,
+            OrganizationName: organization.Name,
+            RequiresEmailConfirmation: true
+        );
+
+        return Result<RegisterCompanyResponse>.Success(response);
     }
 }
