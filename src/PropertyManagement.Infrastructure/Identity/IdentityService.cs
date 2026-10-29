@@ -25,7 +25,7 @@ public sealed class IdentityService(
             "PasswordRequiresLower" => ErrorType.Validation,
             "PasswordRequiresUpper" => ErrorType.Validation,
             _ => ErrorType.Failure
-        }; 
+        };
     }
 
     public async Task<Result<IdentityUserResult>> RegisterAsync(
@@ -38,7 +38,6 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
         var createdAt = clock.UtcNow;
 
         var user = ApplicationUser.Create(
@@ -46,40 +45,130 @@ public sealed class IdentityService(
             lastName,
             address,
             email,
-            createdAt,
-            phoneNumber);
+            phoneNumber,
+            createdAt);
 
-        var identityResult = await userManager.CreateAsync(
-            user,
-            password);
+        var identityResult = await userManager.CreateAsync(user, password);
 
-        if (identityResult.Succeeded)
+        if (!identityResult.Succeeded)
         {
-            var identityUserResult = new IdentityUserResult(
-                UserId: user.Id,
-                CreatedAt: user.CreatedAt);
+            var errors = identityResult.Errors
+                .Select(error => new Error(
+                    Code: $"Identity.{error.Code}",
+                    Message: error.Description,
+                    Type: MapIdentityErrorType(error.Code)))
+                .ToArray();
 
-            return Result<IdentityUserResult>.Success(
-                identityUserResult);
+            return Result<IdentityUserResult>.Failure(errors);
         }
 
-        var errors = identityResult.Errors
-            .Select(error => new Error(
-                Code: $"Identity.{error.Code}",
-                Message: error.Description,
-                Type: MapIdentityErrorType(error.Code)))
-            .ToArray();
+        var result = new IdentityUserResult(
+            UserId: user.Id,
+            Email: user.Email!,
+            FirstName: user.FirstName,
+            LastName: user.LastName,
+            EmailConfirmed: user.EmailConfirmed,
+            CreatedAt: user.CreatedAt);
 
-        return Result<IdentityUserResult>.Failure(errors);
+        return Result<IdentityUserResult>.Success(result);
     }
 
-    public async Task<Result<string>> GenerateEmailConfirmationTokenAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task<Result<AuthUserResult>> ValidateCredentialsAsync(
+        string email,
+        string password,
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var user = await userManager.FindByIdAsync(
-            userId.ToString());
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+        {
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.InvalidCredentials",
+                    Message: "Invalid email or password.",
+                    Type: ErrorType.Validation));
+        }
 
+        if (await userManager.IsLockedOutAsync(user))
+        {
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.UserLockedOut",
+                    Message: "User account is temporarily locked due to multiple failed login attempts. Please try again later.",
+                    Type: ErrorType.Failure));
+        }
+
+        if (!user.EmailConfirmed)
+        {
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.EmailNotConfirmed",
+                    Message: "Email address is not confirmed. Please confirm your email to sign in.",
+                    Type: ErrorType.Failure));
+        }
+
+        var isPasswordValid = await userManager.CheckPasswordAsync(user, password);
+        if (!isPasswordValid)
+        {
+            await userManager.AccessFailedAsync(user);
+
+            if (await userManager.IsLockedOutAsync(user))
+            {
+                return Result<AuthUserResult>.Failure(
+                    new Error(
+                        Code: "Identity.UserLockedOut",
+                        Message: "User account is temporarily locked due to multiple failed login attempts. Please try again later.",
+                        Type: ErrorType.Failure));
+            }
+
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.InvalidCredentials",
+                    Message: "Invalid email or password.",
+                    Type: ErrorType.Validation));
+        }
+
+        await userManager.ResetAccessFailedCountAsync(user);
+
+        return Result<AuthUserResult>.Success(
+            new AuthUserResult(
+                UserId: user.Id,
+                Email: user.Email!,
+                FirstName: user.FirstName,
+                LastName: user.LastName));
+    }
+
+    public async Task<Result<AuthUserResult>> GetAuthUserByIdAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
+
+        return Result<AuthUserResult>.Success(
+            new AuthUserResult(
+                UserId: user.Id,
+                Email: user.Email!,
+                FirstName: user.FirstName,
+                LastName: user.LastName));
+    }
+
+    public async Task<Result<string>> GenerateEmailConfirmationTokenAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
             return Result<string>.Failure(
@@ -99,7 +188,6 @@ public sealed class IdentityService(
         }
 
         var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
-
         return Result<string>.Success(token);
     }
 
@@ -110,10 +198,7 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        var user = await userManager.FindByIdAsync(
-            userId.ToString());
-
+        var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
             return Result<EmailConfirmationUserResult>.Failure(
@@ -134,10 +219,8 @@ public sealed class IdentityService(
 
         var isValid = await userManager.VerifyUserTokenAsync(
             user,
-            userManager.Options.Tokens
-                .EmailConfirmationTokenProvider,
-            UserManager<ApplicationUser>
-                .ConfirmEmailTokenPurpose,
+            userManager.Options.Tokens.EmailConfirmationTokenProvider,
+            UserManager<ApplicationUser>.ConfirmEmailTokenPurpose,
             token);
 
         if (!isValid)
@@ -161,10 +244,7 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
-        var user = await userManager.FindByIdAsync(
-            userId.ToString());
-
+        var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {
             return Result.Failure(
@@ -183,12 +263,8 @@ public sealed class IdentityService(
                     Type: ErrorType.Failure));
         }
 
-        var token = await userManager.GenerateEmailConfirmationTokenAsync(
-            user);
-
-        var identityResult = await userManager.ConfirmEmailAsync(
-            user,
-            token);
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+        var identityResult = await userManager.ConfirmEmailAsync(user, token);
 
         if (!identityResult.Succeeded)
         {
@@ -209,43 +285,39 @@ public sealed class IdentityService(
         GetEmailConfirmationUserAsync(
             Guid userId,
             CancellationToken cancellationToken = default)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            var user = await userManager.FindByIdAsync(
-                userId.ToString());
-
-            if (user is null)
-            {
-                return Result<EmailConfirmationUserResult>.Failure(
-                    new Error(
-                        Code: "Identity.UserNotFound",
-                        Message: "The user was not found.",
-                        Type: ErrorType.NotFound));
-            }
-
-            if (user.EmailConfirmed)
-            {
-                return Result<EmailConfirmationUserResult>.Failure(
-                    new Error(
-                        Code: "Identity.EmailAlreadyConfirmed",
-                        Message: "The email address is already confirmed.",
-                        Type: ErrorType.Conflict));
-            }
-            return Result<EmailConfirmationUserResult>.Success(
-                new EmailConfirmationUserResult(
-                    UserId: user.Id,
-                    Email: user.Email!,
-                    FirstName: user.FirstName));
-    }
-
-    public async Task<bool> ExistsAsync(Guid userId,
-        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return Result<EmailConfirmationUserResult>.Failure(
+                new Error(
+                    Code: "Identity.UserNotFound",
+                    Message: "The user was not found.",
+                    Type: ErrorType.NotFound));
+        }
 
+        if (user.EmailConfirmed)
+        {
+            return Result<EmailConfirmationUserResult>.Failure(
+                new Error(
+                    Code: "Identity.EmailAlreadyConfirmed",
+                    Message: "The email address is already confirmed.",
+                    Type: ErrorType.Conflict));
+        }
+
+        return Result<EmailConfirmationUserResult>.Success(
+            new EmailConfirmationUserResult(
+                UserId: user.Id,
+                Email: user.Email!,
+                FirstName: user.FirstName));
+    }
+
+    public async Task<bool> ExistsAsync(Guid userId, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         return await userManager.Users
-        .AnyAsync(u => u.Id == userId && u.EmailConfirmed, cancellationToken);
+            .AnyAsync(u => u.Id == userId && u.EmailConfirmed, cancellationToken);
     }
 
     public async Task<Result<string>> GeneratePasswordResetTokenAsync(
@@ -253,7 +325,6 @@ public sealed class IdentityService(
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
@@ -282,9 +353,8 @@ public sealed class IdentityService(
         string token,
         string newPassword,
         CancellationToken cancellationToken = default)
-    {   
+    {
         cancellationToken.ThrowIfCancellationRequested();
-
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
         {
@@ -314,7 +384,6 @@ public sealed class IdentityService(
     public async Task<Result> DeleteUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
         {

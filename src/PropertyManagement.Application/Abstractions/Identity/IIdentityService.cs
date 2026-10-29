@@ -14,6 +14,17 @@ namespace PropertyManagement.Application.Abstractions.Identity
             CancellationToken cancellationToken = default
         );
 
+        Task<Result<AuthUserResult>> ValidateCredentialsAsync(
+            string email,
+            string password,
+            CancellationToken cancellationToken = default
+        );
+
+        Task<Result<AuthUserResult>> GetAuthUserByIdAsync(
+            Guid userId,
+            CancellationToken cancellationToken = default
+        );
+
         Task<Result<string>> GenerateEmailConfirmationTokenAsync(
             Guid userId,
             CancellationToken cancellationToken = default

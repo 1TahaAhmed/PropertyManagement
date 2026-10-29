@@ -1,9 +1,13 @@
-﻿using Microsoft.AspNetCore.Identity;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Authentication;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
@@ -15,8 +19,6 @@ using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
 using PropertyManagement.Infrastructure.Persistence.Repositories;
-
-
 
 namespace PropertyManagement.Infrastructure
 {
@@ -30,13 +32,11 @@ namespace PropertyManagement.Infrastructure
                 configuration.GetConnectionString("MyConn")
                 ?? throw new InvalidOperationException("Connection string 'MyConn' was not found.");
 
-            services.AddDbContext<ApplicationDbContext>
-            (
+            services.AddDbContext<ApplicationDbContext>(
                 options => options.UseSqlServer(connectionString)
             );
 
             services.AddDataProtection();
-
             services.AddSingleton<IClock, SystemClock>();
 
             services.AddIdentityCore<ApplicationUser>(options =>
@@ -46,22 +46,61 @@ namespace PropertyManagement.Infrastructure
                 options.Password.RequireLowercase = true;
                 options.Password.RequireUppercase = true;
                 options.Password.RequireNonAlphanumeric = true;
-
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.AllowedForNewUsers = true;
-
                 options.User.RequireUniqueEmail = true;
-
                 options.SignIn.RequireConfirmedEmail = true;
             })
             .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddDefaultTokenProviders();
 
-
             services.AddScoped<IIdentityService, IdentityService>();
 
+            // JWT Options & Authentication
+            services.AddOptions<JwtOptions>()
+                .Bind(configuration.GetSection(JwtOptions.SectionName))
+                .Validate(
+                    options => !string.IsNullOrWhiteSpace(options.Secret) && options.Secret.Length >= 32,
+                    "JWT secret must be at least 32 characters long.")
+                .Validate(
+                    options => !string.IsNullOrWhiteSpace(options.Issuer),
+                    "JWT issuer is required.")
+                .Validate(
+                    options => !string.IsNullOrWhiteSpace(options.Audience),
+                    "JWT audience is required.")
+                .ValidateOnStart();
+
+            services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
+            var jwtSection = configuration.GetSection(JwtOptions.SectionName);
+            var secretKey = jwtSection["Secret"] ?? "DefaultFallbackSecretKeyMustBe32CharactersOrLonger!";
+            var issuer = jwtSection["Issuer"] ?? "PropertyManagement";
+            var audience = jwtSection["Audience"] ?? "PropertyManagement";
+
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = issuer,
+                    ValidateAudience = true,
+                    ValidAudience = audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
+
+            // SMTP Options
             services.AddOptions<SmtpOptions>()
                 .Bind(configuration.GetSection(SmtpOptions.SectionName))
                 .Validate(options =>
@@ -80,6 +119,7 @@ namespace PropertyManagement.Infrastructure
 
             services.AddScoped<IEmailSender, SmtpEmailSender>();
 
+            // Email Confirmation Options
             services.AddOptions<EmailConfirmationOptions>()
                 .Bind(configuration.GetSection(
                     EmailConfirmationOptions.SectionName))
@@ -141,9 +181,7 @@ namespace PropertyManagement.Infrastructure
                 DataProtectionVerificationCodeProtector>();
 
             services.AddScoped<IPropertyRepository, PropertyRepository>();
-
             services.AddScoped<IUnitRepository, UnitRepository>();
-
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 

@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Authentication;
 using PropertyManagement.Api.Contracts.Authentication.PasswordReset;
 using PropertyManagement.Api.Extensions;
+using PropertyManagement.Application.Features.Authentication.Login;
 using PropertyManagement.Application.Features.Authentication.PasswordReset.ForgotPassword;
 using PropertyManagement.Application.Features.Authentication.PasswordReset.ResetPassword;
+using PropertyManagement.Application.Features.Authentication.RefreshToken;
 using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Application.Features.Authentication.RegisterCompany;
-using ApiRegisterResponse =
-    PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
+using PropertyManagement.Application.Features.Authentication.RevokeToken;
+using ApiRegisterResponse = PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -54,6 +56,87 @@ public sealed class AuthController(ISender sender) : ControllerBase
         return StatusCode(
             StatusCodes.Status201Created,
             response);
+    }
+
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login(
+        [FromBody] LoginRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new LoginCommand(
+            Email: request.Email,
+            Password: request.Password,
+            OrganizationId: request.OrganizationId);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("refresh-token")]
+    [ProducesResponseType(typeof(RefreshTokenResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> RefreshToken(
+        [FromBody] RefreshTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RefreshTokenCommand(request.RefreshToken);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("logout")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Logout(
+        [FromBody] RevokeTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RevokeTokenCommand(request.RefreshToken);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new { message = "Logged out successfully." });
+    }
+
+    [HttpPost("revoke-token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RevokeToken(
+        [FromBody] RevokeTokenRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RevokeTokenCommand(request.RefreshToken);
+
+        var result = await sender.Send(command, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new { message = "Token revoked successfully." });
     }
 
     [HttpPost("forgot-password")]
