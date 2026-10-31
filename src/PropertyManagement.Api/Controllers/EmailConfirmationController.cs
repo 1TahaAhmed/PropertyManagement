@@ -38,6 +38,7 @@ public sealed class EmailConfirmationController(
 
         return Ok(result.Value);
     }
+
         [HttpPost("resend")]
         [ProducesResponseType(
         typeof(ResendEmailConfirmationResponse),

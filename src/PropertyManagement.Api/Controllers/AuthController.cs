@@ -100,7 +100,6 @@ public sealed class AuthController(ISender sender) : ControllerBase
 
         return Ok(result.Value);
     }
-
     [HttpPost("logout")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
