@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using PropertyManagement.Domain.Entities.Authentication;
 
@@ -25,7 +25,11 @@ public sealed class RefreshTokenConfiguration : IEntityTypeConfiguration<Refresh
         builder.Property(r => r.ReplacedByTokenHash)
             .HasMaxLength(128);
 
+        builder.Property(r => r.OrganizationId)
+            .IsRequired(false);
+
         builder.HasIndex(r => r.TokenHash).IsUnique();
         builder.HasIndex(r => r.UserId);
+        builder.HasIndex(r => r.OrganizationId);
     }
 }

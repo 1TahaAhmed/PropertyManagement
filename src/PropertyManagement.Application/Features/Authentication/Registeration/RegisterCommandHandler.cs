@@ -31,17 +31,29 @@ public sealed class RegisterCommandHandler(
 
         var identityUser = identityResult.Value;
 
-        var codeIssueResult = await codeIssuer.IssueAsync(
-            userId: identityUser.UserId,
-            email: request.Email,
-            firstName: request.FirstName,
-            cancellationToken: cancellationToken);
+        try
+        {
+            var codeIssueResult = await codeIssuer.IssueAsync(
+                userId: identityUser.UserId,
+                email: request.Email,
+                firstName: request.FirstName,
+                cancellationToken: cancellationToken);
 
-        if (codeIssueResult.IsFailure)
+            if (codeIssueResult.IsFailure)
+            {
+                await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
+                return Result<RegisterResponse>.Failure(
+                    codeIssueResult.Errors.ToArray());
+            }
+        }
+        catch (Exception ex)
         {
             await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
             return Result<RegisterResponse>.Failure(
-                codeIssueResult.Errors.ToArray());
+                new Error(
+                    Code: "EmailConfirmation.SendFailed",
+                    Message: $"Failed to send confirmation email: {ex.Message}",
+                    Type: ErrorType.Failure));
         }
 
         var response = new RegisterResponse(

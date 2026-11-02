@@ -26,6 +26,7 @@ public sealed class RefreshTokenCommandHandlerTests
     public RefreshTokenCommandHandlerTests()
     {
         _clock.UtcNow.Returns(FixedNow);
+
         _jwtTokenGenerator.HashToken("raw_plain_token").Returns("hashed_plain_token");
         _jwtTokenGenerator.HashToken("revoked_token").Returns("hashed_revoked_token");
         _jwtTokenGenerator.HashToken("expired_token").Returns("hashed_expired_token");
@@ -56,12 +57,12 @@ public sealed class RefreshTokenCommandHandlerTests
     public async Task Handle_ShouldTriggerReuseDetectionAndRevokeAllUserTokens_WhenTokenIsAlreadyRevoked()
     {
         var command = new RefreshTokenCommand("revoked_token");
-
         var revokedToken = RefreshToken.Create(
             TestUserId,
             "hashed_revoked_token",
             FixedNow.AddDays(7),
             FixedNow.AddDays(-1));
+
         revokedToken.Revoke(FixedNow.AddHours(-1), "replaced_by_hash");
 
         _refreshTokenRepository.GetByTokenHashAsync("hashed_revoked_token", Arg.Any<CancellationToken>())
@@ -84,7 +85,6 @@ public sealed class RefreshTokenCommandHandlerTests
     public async Task Handle_ShouldReturnFailure_WhenTokenIsExpired()
     {
         var command = new RefreshTokenCommand("expired_token");
-
         var expiredToken = RefreshToken.Create(
             TestUserId,
             "hashed_expired_token",
@@ -104,7 +104,6 @@ public sealed class RefreshTokenCommandHandlerTests
     public async Task Handle_ShouldRotateTokenAndReturnNewTokens_WhenTokenIsValid()
     {
         var command = new RefreshTokenCommand("raw_plain_token");
-
         var activeToken = RefreshToken.Create(
             TestUserId,
             "hashed_plain_token",
@@ -132,13 +131,15 @@ public sealed class RefreshTokenCommandHandlerTests
             "User",
             organization.Id,
             "Admin")
-            .Returns("new_access_token");
+            .Returns(("new_access_token", FixedNow.AddMinutes(15)));
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal("new_access_token", result.Value.AccessToken);
         Assert.Equal("new_plain_token", result.Value.RefreshToken);
+        Assert.Equal(FixedNow.AddMinutes(15), result.Value.ExpiresAtUtc);
+        Assert.Equal(FixedNow.AddDays(7), result.Value.RefreshTokenExpiresAtUtc);
 
         // Old token should now be revoked with replacement hash
         Assert.True(activeToken.IsRevoked);
@@ -149,5 +150,58 @@ public sealed class RefreshTokenCommandHandlerTests
             Arg.Is<RefreshToken>(t => t.UserId == TestUserId && t.TokenHash == "new_hashed_token"),
             Arg.Any<CancellationToken>());
         await _refreshTokenRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPreserveExistingOrganizationId_WhenTokenRotates()
+    {
+        var command = new RefreshTokenCommand("raw_plain_token");
+
+        var org1 = Organization.Create("First Org", FixedNow);
+        var org2 = Organization.Create("Second Org", FixedNow);
+
+        // Existing token was authenticated for org2
+        var activeToken = RefreshToken.Create(
+            TestUserId,
+            "hashed_plain_token",
+            FixedNow.AddDays(7),
+            FixedNow,
+            org2.Id);
+
+        _refreshTokenRepository.GetByTokenHashAsync("hashed_plain_token", Arg.Any<CancellationToken>())
+            .Returns(activeToken);
+
+        _jwtTokenGenerator.GenerateRefreshToken()
+            .Returns(("new_plain_token", "new_hashed_token", FixedNow.AddDays(7)));
+
+        var authUser = new AuthUserResult(TestUserId, "user@example.com", "Test", "User");
+        _identityService.GetAuthUserByIdAsync(TestUserId, Arg.Any<CancellationToken>())
+            .Returns(Result<AuthUserResult>.Success(authUser));
+
+        _organizationRepository.GetUserOrganizationsAsync(TestUserId, Arg.Any<CancellationToken>())
+            .Returns([
+                (org1, [MembershipRole.Member]),
+                (org2, [MembershipRole.Owner])
+            ]);
+
+        _jwtTokenGenerator.GenerateAccessToken(
+            TestUserId,
+            "user@example.com",
+            "Test",
+            "User",
+            org2.Id,
+            "Owner")
+            .Returns(("new_access_token", FixedNow.AddMinutes(15)));
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("new_access_token", result.Value.AccessToken);
+        Assert.Equal(FixedNow.AddMinutes(15), result.Value.ExpiresAtUtc);
+
+        // New refresh token MUST preserve org2.Id
+        await _refreshTokenRepository.Received(1).AddAsync(
+            Arg.Is<RefreshToken>(t => t.UserId == TestUserId && t.TokenHash == "new_hashed_token" && t.OrganizationId == org2.Id),
+            Arg.Any<CancellationToken>());
     }
 }

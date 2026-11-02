@@ -20,6 +20,7 @@ public sealed class RegisterCompanyCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IDbTransaction _transaction = Substitute.For<IDbTransaction>();
     private readonly RegisterCompanyCommandHandler _handler;
+
     private static readonly DateTime FixedNow = new(2026, 10, 29, 12, 0, 0, DateTimeKind.Utc);
 
     public RegisterCompanyCommandHandlerTests()
@@ -40,13 +41,13 @@ public sealed class RegisterCompanyCommandHandlerTests
     public async Task Handle_ShouldReturnConflict_WhenCompanyAlreadyExists()
     {
         var command = new RegisterCompanyCommand(
-            "Acme Real Estate",
-            "John",
-            "Doe",
-            "123 Main St",
-            "john@example.com",
-            "Password123!",
-            null);
+            CompanyName: "Acme Real Estate",
+            Email: "john@example.com",
+            Password: "Password123!",
+            FirstName: "John",
+            LastName: "Doe",
+            PhoneNumber: "+1234567890",
+            Address: "123 Main St");
 
         _organizationRepository.ExistsByNameAsync("Acme Real Estate", Arg.Any<CancellationToken>())
             .Returns(true);
@@ -63,13 +64,13 @@ public sealed class RegisterCompanyCommandHandlerTests
     public async Task Handle_ShouldReturnFailure_WhenIdentityRegistrationFails()
     {
         var command = new RegisterCompanyCommand(
-            "Acme Real Estate",
-            "John",
-            "Doe",
-            "123 Main St",
-            "john@example.com",
-            "Password123!",
-            null);
+            CompanyName: "Acme Real Estate",
+            Email: "john@example.com",
+            Password: "Password123!",
+            FirstName: "John",
+            LastName: "Doe",
+            PhoneNumber: "+1234567890",
+            Address: "123 Main St");
 
         _organizationRepository.ExistsByNameAsync("Acme Real Estate", Arg.Any<CancellationToken>())
             .Returns(false);
@@ -93,16 +94,16 @@ public sealed class RegisterCompanyCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldRollbackAndReturnFailure_WhenCodeIssuerFails()
+    public async Task Handle_ShouldRollbackAndDeleteUser_WhenCodeIssuerFails()
     {
         var command = new RegisterCompanyCommand(
-            "Acme Real Estate",
-            "John",
-            "Doe",
-            "123 Main St",
-            "john@example.com",
-            "Password123!",
-            null);
+            CompanyName: "Acme Real Estate",
+            Email: "john@example.com",
+            Password: "Password123!",
+            FirstName: "John",
+            LastName: "Doe",
+            PhoneNumber: "+1234567890",
+            Address: "123 Main St");
 
         var userId = Guid.NewGuid();
 
@@ -128,21 +129,65 @@ public sealed class RegisterCompanyCommandHandlerTests
 
         Assert.True(result.IsFailure);
         Assert.Equal("Email.SendingFailed", result.Errors.First().Code);
+
+        // Security compensation assertions
         await _transaction.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
         await _transaction.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        await _identityService.Received(1).DeleteUserAsync(userId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_ShouldRollbackAndDeleteUser_WhenCodeIssuerThrowsException()
+    {
+        var command = new RegisterCompanyCommand(
+            CompanyName: "Acme Real Estate",
+            Email: "john@example.com",
+            Password: "Password123!",
+            FirstName: "John",
+            LastName: "Doe",
+            PhoneNumber: "+1234567890",
+            Address: "123 Main St");
+
+        var userId = Guid.NewGuid();
+
+        _organizationRepository.ExistsByNameAsync("Acme Real Estate", Arg.Any<CancellationToken>())
+            .Returns(false);
+        _organizationRepository.ExistsByIdentifierAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+
+        _identityService.RegisterAsync(
+            command.FirstName,
+            command.LastName,
+            command.Address,
+            command.Email,
+            command.Password,
+            command.PhoneNumber,
+            Arg.Any<CancellationToken>())
+            .Returns(Result<IdentityUserResult>.Success(new IdentityUserResult(userId, FixedNow)));
+
+        _codeIssuer.IssueAsync(userId, command.Email, command.FirstName, Arg.Any<CancellationToken>())
+            .Returns<Task<Result>>(x => throw new InvalidOperationException("SMTP connection refused"));
+
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("EmailConfirmation.SendFailed", result.Errors.First().Code);
+
+        await _transaction.Received(1).RollbackAsync(Arg.Any<CancellationToken>());
+        await _identityService.Received(1).DeleteUserAsync(userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Handle_ShouldCommitAndReturnSuccess_WhenAllStepsSucceed()
     {
         var command = new RegisterCompanyCommand(
-            "Acme Real Estate",
-            "John",
-            "Doe",
-            "123 Main St",
-            "john@example.com",
-            "Password123!",
-            null);
+            CompanyName: "Acme Real Estate",
+            Email: "john@example.com",
+            Password: "Password123!",
+            FirstName: "John",
+            LastName: "Doe",
+            PhoneNumber: "+1234567890",
+            Address: "123 Main St");
 
         var userId = Guid.NewGuid();
 

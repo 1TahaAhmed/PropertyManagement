@@ -23,6 +23,7 @@ public sealed class RegisterCompanyCommandHandler(
         CancellationToken cancellationToken)
     {
         var trimmedCompanyName = request.CompanyName.Trim();
+
         var companyExists = await organizationRepository.ExistsByNameAsync(
             trimmedCompanyName,
             cancellationToken);
@@ -76,17 +77,31 @@ public sealed class RegisterCompanyCommandHandler(
         await organizationRepository.AddMemberAsync(ownerMember, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var codeIssueResult = await codeIssuer.IssueAsync(
-            userId: identityUser.UserId,
-            email: request.Email,
-            firstName: request.FirstName,
-            cancellationToken: cancellationToken);
+        try
+        {
+            var codeIssueResult = await codeIssuer.IssueAsync(
+                userId: identityUser.UserId,
+                email: request.Email,
+                firstName: request.FirstName,
+                cancellationToken: cancellationToken);
 
-        if (codeIssueResult.IsFailure)
+            if (codeIssueResult.IsFailure)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
+                return Result<RegisterCompanyResponse>.Failure(
+                    codeIssueResult.Errors.ToArray());
+            }
+        }
+        catch (Exception ex)
         {
             await transaction.RollbackAsync(cancellationToken);
+            await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
             return Result<RegisterCompanyResponse>.Failure(
-                codeIssueResult.Errors.ToArray());
+                new Error(
+                    Code: "EmailConfirmation.SendFailed",
+                    Message: $"Failed to send confirmation email: {ex.Message}",
+                    Type: ErrorType.Failure));
         }
 
         await transaction.CommitAsync(cancellationToken);

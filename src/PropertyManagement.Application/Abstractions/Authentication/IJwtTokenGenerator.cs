@@ -2,7 +2,7 @@ namespace PropertyManagement.Application.Abstractions.Authentication;
 
 public interface IJwtTokenGenerator
 {
-    string GenerateAccessToken(
+    (string Token, DateTime ExpiresAtUtc) GenerateAccessToken(
         Guid userId,
         string email,
         string firstName,

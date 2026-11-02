@@ -76,7 +76,12 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
             var jwtSection = configuration.GetSection(JwtOptions.SectionName);
-            var secretKey = jwtSection["Secret"] ?? "DefaultFallbackSecretKeyMustBe32CharactersOrLonger!";
+            var secretKey = jwtSection["Secret"];
+            if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
+            {
+                throw new InvalidOperationException(
+                    "JWT Secret configuration is missing or shorter than 32 characters. Configure 'Jwt:Secret' via environment variables or user secrets.");
+            }
             var issuer = jwtSection["Issuer"] ?? "PropertyManagement";
             var audience = jwtSection["Audience"] ?? "PropertyManagement";
 

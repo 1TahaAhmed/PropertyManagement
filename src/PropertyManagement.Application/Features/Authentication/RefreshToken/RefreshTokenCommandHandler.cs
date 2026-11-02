@@ -61,15 +61,16 @@ public sealed class RefreshTokenCommandHandler(
                     Type: ErrorType.Unauthorized));
         }
 
-        var (newPlainToken, newTokenHash, newExpiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
+        var (newPlainToken, newTokenHash, newRefreshTokenExpiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
 
         existingToken.Revoke(clock.UtcNow, replacedByTokenHash: newTokenHash);
 
         var newRefreshToken = RefreshTokenEntity.Create(
             existingToken.UserId,
             newTokenHash,
-            newExpiresAtUtc,
-            clock.UtcNow);
+            newRefreshTokenExpiresAtUtc,
+            clock.UtcNow,
+            existingToken.OrganizationId);
 
         await refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
@@ -92,7 +93,22 @@ public sealed class RefreshTokenCommandHandler(
         Guid? activeOrgId = null;
         string? activeRole = null;
 
-        if (userOrganizations.Count > 0)
+        // Preserve the organization context stored on the refreshed token
+        if (existingToken.OrganizationId.HasValue)
+        {
+            var matched = userOrganizations.FirstOrDefault(o =>
+                o.Organization.Id == existingToken.OrganizationId.Value &&
+                o.Organization.Status == OrganizationStatus.Active);
+
+            if (matched.Organization is not null)
+            {
+                activeOrgId = matched.Organization.Id;
+                activeRole = matched.Roles.Count > 0 ? matched.Roles[0].ToString() : null;
+            }
+        }
+
+        // If the token had no organization or that org is no longer active, fall back to first active org
+        if (!activeOrgId.HasValue && userOrganizations.Count > 0)
         {
             var primary = userOrganizations.FirstOrDefault(o => o.Organization.Status == OrganizationStatus.Active);
             if (primary.Organization is not null)
@@ -102,7 +118,7 @@ public sealed class RefreshTokenCommandHandler(
             }
         }
 
-        var newAccessToken = jwtTokenGenerator.GenerateAccessToken(
+        var (newAccessToken, newAccessTokenExpiresAtUtc) = jwtTokenGenerator.GenerateAccessToken(
             user.UserId,
             user.Email,
             user.FirstName,
@@ -113,7 +129,8 @@ public sealed class RefreshTokenCommandHandler(
         var response = new RefreshTokenResponse(
             AccessToken: newAccessToken,
             RefreshToken: newPlainToken,
-            ExpiresAtUtc: newExpiresAtUtc);
+            ExpiresAtUtc: newAccessTokenExpiresAtUtc,
+            RefreshTokenExpiresAtUtc: newRefreshTokenExpiresAtUtc);
 
         return Result<RefreshTokenResponse>.Success(response);
     }

@@ -9,10 +9,18 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__MyConn=Server=db,1433;Database=PropertyManagementDb;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__MyConn=Server=db,1433;Database=PropertyManagementDb;User Id=sa;Password=${MSSQL_SA_PASSWORD:-Your_Strong_Password123!};TrustServerCertificate=True;MultipleActiveResultSets=true
+      - Jwt__Secret=${JWT_SECRET:-Development_Super_Secret_Key_At_Least_32_Characters_Long_For_Local_Dev_2026!}
+      - Email__Smtp__Host=mailhog
+      - Email__Smtp__Port=1025
+      - Email__Smtp__UseSsl=false
+      - Email__Smtp__FromEmail=noreply@propertymanagement.local
+      - Email__Smtp__FromName=Property Management System
     depends_on:
       db:
         condition: service_healthy
+      mailhog:
+        condition: service_started
     networks:
       - propertymanagement-net
     restart: unless-stopped
@@ -24,16 +32,26 @@ services:
       - "1433:1433"
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=Your_Strong_Password123!
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-Your_Strong_Password123!}
       - MSSQL_PID=Developer
     volumes:
       - sqlserver-data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Your_Strong_Password123!' -C -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$${MSSQL_SA_PASSWORD:-Your_Strong_Password123!}" -C -Q 'SELECT 1' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 15s
+    networks:
+      - propertymanagement-net
+    restart: unless-stopped
+
+  mailhog:
+    container_name: propertymanagement-mailhog
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
     networks:
       - propertymanagement-net
     restart: unless-stopped

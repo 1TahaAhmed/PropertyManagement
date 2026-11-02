@@ -27,6 +27,7 @@ public sealed class LoginCommandHandlerTests
     public LoginCommandHandlerTests()
     {
         _clock.UtcNow.Returns(FixedNow);
+
         _handler = new LoginCommandHandler(
             _identityService,
             _organizationRepository,
@@ -103,7 +104,7 @@ public sealed class LoginCommandHandlerTests
             "User",
             organization.Id,
             "Owner")
-            .Returns("access_token_mock");
+            .Returns(("access_token_mock", FixedNow.AddMinutes(15)));
 
         _jwtTokenGenerator.GenerateRefreshToken()
             .Returns(("plain_refresh_token", "hashed_token", FixedNow.AddDays(7)));
@@ -113,11 +114,13 @@ public sealed class LoginCommandHandlerTests
         Assert.True(result.IsSuccess);
         Assert.Equal("access_token_mock", result.Value.AccessToken);
         Assert.Equal("plain_refresh_token", result.Value.RefreshToken);
+        Assert.Equal(FixedNow.AddMinutes(15), result.Value.ExpiresAtUtc);
+        Assert.Equal(FixedNow.AddDays(7), result.Value.RefreshTokenExpiresAtUtc);
         Assert.Equal(organization.Id, result.Value.OrganizationId);
         Assert.Equal("Owner", result.Value.Role);
 
         await _refreshTokenRepository.Received(1).AddAsync(
-            Arg.Is<RefreshToken>(t => t.UserId == TestUserId && t.TokenHash == "hashed_token"),
+            Arg.Is<RefreshToken>(t => t.UserId == TestUserId && t.TokenHash == "hashed_token" && t.OrganizationId == organization.Id),
             Arg.Any<CancellationToken>());
         await _refreshTokenRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

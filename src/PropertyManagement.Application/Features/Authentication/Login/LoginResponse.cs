@@ -5,4 +5,5 @@ public sealed record LoginResponse(
     string RefreshToken,
     DateTime ExpiresAtUtc,
     Guid? OrganizationId,
-    string? Role);
+    string? Role,
+    DateTime? RefreshTokenExpiresAtUtc = null);

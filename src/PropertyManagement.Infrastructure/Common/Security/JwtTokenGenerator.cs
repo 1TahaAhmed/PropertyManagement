@@ -15,7 +15,7 @@ public sealed class JwtTokenGenerator(
 {
     private readonly JwtOptions _options = jwtOptions.Value;
 
-    public string GenerateAccessToken(
+    public (string Token, DateTime ExpiresAtUtc) GenerateAccessToken(
         Guid userId,
         string email,
         string firstName,
@@ -45,7 +45,6 @@ public sealed class JwtTokenGenerator(
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
         var expires = clock.UtcNow.AddMinutes(_options.ExpiryMinutes);
 
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -60,7 +59,7 @@ public sealed class JwtTokenGenerator(
         var tokenHandler = new JwtSecurityTokenHandler();
         var securityToken = tokenHandler.CreateToken(tokenDescriptor);
 
-        return tokenHandler.WriteToken(securityToken);
+        return (tokenHandler.WriteToken(securityToken), expires);
     }
 
     public (string PlainToken, string TokenHash, DateTime ExpiresAtUtc) GenerateRefreshToken()
@@ -68,6 +67,7 @@ public sealed class JwtTokenGenerator(
         var randomBytes = new byte[64];
         using var rng = RandomNumberGenerator.Create();
         rng.GetBytes(randomBytes);
+
         var plainToken = Convert.ToBase64String(randomBytes)
             .Replace('+', '-')
             .Replace('/', '_')

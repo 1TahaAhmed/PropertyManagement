@@ -95,15 +95,7 @@ public sealed class IdentityService(
                     Type: ErrorType.Failure));
         }
 
-        if (!user.EmailConfirmed)
-        {
-            return Result<AuthUserResult>.Failure(
-                new Error(
-                    Code: "Identity.EmailNotConfirmed",
-                    Message: "Email address is not confirmed. Please confirm your email to sign in.",
-                    Type: ErrorType.Failure));
-        }
-
+        // Validate password first to prevent email enumeration
         var isPasswordValid = await userManager.CheckPasswordAsync(user, password);
         if (!isPasswordValid)
         {
@@ -123,6 +115,16 @@ public sealed class IdentityService(
                     Code: "Identity.InvalidCredentials",
                     Message: "Invalid email or password.",
                     Type: ErrorType.Validation));
+        }
+
+        // Only after credentials are authenticated do we check email confirmation
+        if (!user.EmailConfirmed)
+        {
+            return Result<AuthUserResult>.Failure(
+                new Error(
+                    Code: "Identity.EmailNotConfirmed",
+                    Message: "Email address is not confirmed. Please confirm your email to sign in.",
+                    Type: ErrorType.Failure));
         }
 
         await userManager.ResetAccessFailedCountAsync(user);

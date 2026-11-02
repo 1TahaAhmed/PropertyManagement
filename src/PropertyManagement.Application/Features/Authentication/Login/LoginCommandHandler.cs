@@ -65,7 +65,7 @@ public sealed class LoginCommandHandler(
             }
         }
 
-        var accessToken = jwtTokenGenerator.GenerateAccessToken(
+        var (accessToken, accessTokenExpiresAtUtc) = jwtTokenGenerator.GenerateAccessToken(
             user.UserId,
             user.Email,
             user.FirstName,
@@ -73,13 +73,14 @@ public sealed class LoginCommandHandler(
             activeOrgId,
             activeRole);
 
-        var (plainRefreshToken, tokenHash, expiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
+        var (plainRefreshToken, tokenHash, refreshTokenExpiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
 
         var refreshTokenEntity = RefreshTokenEntity.Create(
             user.UserId,
             tokenHash,
-            expiresAtUtc,
-            clock.UtcNow);
+            refreshTokenExpiresAtUtc,
+            clock.UtcNow,
+            activeOrgId);
 
         await refreshTokenRepository.AddAsync(refreshTokenEntity, cancellationToken);
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
@@ -87,9 +88,10 @@ public sealed class LoginCommandHandler(
         var response = new LoginResponse(
             AccessToken: accessToken,
             RefreshToken: plainRefreshToken,
-            ExpiresAtUtc: expiresAtUtc,
+            ExpiresAtUtc: accessTokenExpiresAtUtc,
             OrganizationId: activeOrgId,
-            Role: activeRole);
+            Role: activeRole,
+            RefreshTokenExpiresAtUtc: refreshTokenExpiresAtUtc);
 
         return Result<LoginResponse>.Success(response);
     }
