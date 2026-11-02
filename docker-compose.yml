@@ -17,7 +17,6 @@ services:
       - propertymanagement-net
     restart: unless-stopped
 
-  #===================================
   db:
     container_name: propertymanagement-db
     image: mcr.microsoft.com/mssql/server:2022-latest

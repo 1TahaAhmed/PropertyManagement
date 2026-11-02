@@ -7,10 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Events\" />
-    <Folder Include="Exceptions\" />
-    <Folder Include="Services\" />
-    <Folder Include="ValueObjects\" />
+    <Compile Remove="Events\**" />
+    <Compile Remove="Exceptions\**" />
+    <Compile Remove="Services\**" />
+    <Compile Remove="ValueObjects\**" />
+    <EmbeddedResource Remove="Events\**" />
+    <EmbeddedResource Remove="Exceptions\**" />
+    <EmbeddedResource Remove="Services\**" />
+    <EmbeddedResource Remove="ValueObjects\**" />
+    <None Remove="Events\**" />
+    <None Remove="Exceptions\**" />
+    <None Remove="Services\**" />
+    <None Remove="ValueObjects\**" />
   </ItemGroup>
 
 </Project>

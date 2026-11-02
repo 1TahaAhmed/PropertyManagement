@@ -33,7 +33,6 @@ public sealed class LoginCommandHandler(
 
         var user = credentialsResult.Value;
 
-        // Resolve Organization and Role
         var userOrganizations = await organizationRepository.GetUserOrganizationsAsync(
             user.UserId,
             cancellationToken);
@@ -66,7 +65,6 @@ public sealed class LoginCommandHandler(
             }
         }
 
-        // Generate Tokens
         var accessToken = jwtTokenGenerator.GenerateAccessToken(
             user.UserId,
             user.Email,

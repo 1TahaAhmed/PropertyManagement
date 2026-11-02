@@ -36,7 +36,6 @@ public sealed class RefreshTokenCommandHandler(
                     Type: ErrorType.Unauthorized));
         }
 
-        // Reuse Detection: If the token was already revoked, an attacker or compromised client is reusing it
         if (existingToken.IsRevoked)
         {
             await refreshTokenRepository.RevokeAllUserTokensAsync(
@@ -62,7 +61,6 @@ public sealed class RefreshTokenCommandHandler(
                     Type: ErrorType.Unauthorized));
         }
 
-        // Rotate Token: create new, mark old as revoked
         var (newPlainToken, newTokenHash, newExpiresAtUtc) = jwtTokenGenerator.GenerateRefreshToken();
 
         existingToken.Revoke(clock.UtcNow, replacedByTokenHash: newTokenHash);
@@ -76,7 +74,6 @@ public sealed class RefreshTokenCommandHandler(
         await refreshTokenRepository.AddAsync(newRefreshToken, cancellationToken);
         await refreshTokenRepository.SaveChangesAsync(cancellationToken);
 
-        // Fetch User and Active Organization to generate new Access Token
         var userResult = await identityService.GetAuthUserByIdAsync(
             existingToken.UserId,
             cancellationToken);
