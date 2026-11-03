@@ -1,6 +1,7 @@
 using MediatR;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
+using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 
 namespace PropertyManagement.Application.Features.Authentication.Registeration;

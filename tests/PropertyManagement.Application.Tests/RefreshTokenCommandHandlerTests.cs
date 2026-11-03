@@ -180,7 +180,7 @@ public sealed class RefreshTokenCommandHandlerTests
 
         _organizationRepository.GetUserOrganizationsAsync(TestUserId, Arg.Any<CancellationToken>())
             .Returns([
-                (org1, [MembershipRole.Member]),
+                (org1, [MembershipRole.Staff]),
                 (org2, [MembershipRole.Owner])
             ]);
 

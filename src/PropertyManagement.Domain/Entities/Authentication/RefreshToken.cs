@@ -1,4 +1,4 @@
-﻿namespace PropertyManagement.Domain.Entities.Authentication;
+namespace PropertyManagement.Domain.Entities.Authentication;
 
 public sealed class RefreshToken
 {
@@ -11,6 +11,7 @@ public sealed class RefreshToken
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? RevokedAtUtc { get; private set; }
     public string? ReplacedByTokenHash { get; private set; }
+    public Guid? OrganizationId { get; private set; }
 
     public bool IsExpired(DateTime utcNow) => utcNow >= ExpiresAtUtc;
     public bool IsRevoked => RevokedAtUtc.HasValue;
@@ -20,7 +21,8 @@ public sealed class RefreshToken
         Guid userId,
         string tokenHash,
         DateTime expiresAtUtc,
-        DateTime utcNow)
+        DateTime utcNow,
+        Guid? organizationId = null)
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("User ID cannot be empty.", nameof(userId));
@@ -33,7 +35,8 @@ public sealed class RefreshToken
             UserId = userId,
             TokenHash = tokenHash,
             ExpiresAtUtc = expiresAtUtc,
-            CreatedAtUtc = utcNow
+            CreatedAtUtc = utcNow,
+            OrganizationId = organizationId
         };
     }
 

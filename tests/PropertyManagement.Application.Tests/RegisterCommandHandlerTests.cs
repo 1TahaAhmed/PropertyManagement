@@ -65,7 +65,7 @@ public sealed class RegisterCommandHandlerTests
             .Returns(Result<IdentityUserResult>.Success(new IdentityUserResult(TestUserId, FixedNow)));
 
         _codeIssuer.IssueAsync(TestUserId, command.Email, command.FirstName, Arg.Any<CancellationToken>())
-            .Returns(Result.Failure(new Error("Email.Failed", "Failed to send", ErrorType.Failure)));
+            .Returns(Result.Failure(new Error("Email.Failed", "Failed to send", Type: ErrorType.Failure)));
 
         var result = await _handler.Handle(command, CancellationToken.None);
 
