@@ -93,7 +93,6 @@ public sealed class RefreshTokenCommandHandler(
         Guid? activeOrgId = null;
         string? activeRole = null;
 
-        // Preserve the organization context stored on the refreshed token
         if (existingToken.OrganizationId.HasValue)
         {
             var matched = userOrganizations.FirstOrDefault(o =>
@@ -107,7 +106,6 @@ public sealed class RefreshTokenCommandHandler(
             }
         }
 
-        // If the token had no organization or that org is no longer active, fall back to first active org
         if (!activeOrgId.HasValue && userOrganizations.Count > 0)
         {
             var primary = userOrganizations.FirstOrDefault(o => o.Organization.Status == OrganizationStatus.Active);
