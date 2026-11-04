@@ -6,7 +6,6 @@ using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Domain.Entities.Authentication;
 
 namespace PropertyManagement.Application.Features.Authentication.EmailConfirmation.Verify;
 

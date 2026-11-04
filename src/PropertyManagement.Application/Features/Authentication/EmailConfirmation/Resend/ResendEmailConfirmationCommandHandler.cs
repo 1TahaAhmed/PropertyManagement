@@ -37,7 +37,7 @@ public sealed class ResendEmailConfirmationCommandHandler(
         }
 
         var user = userResult.Value;
-
+        
         var now = clock.UtcNow;
 
         var rateLimitResult =

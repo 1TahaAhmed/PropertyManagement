@@ -8,12 +8,15 @@
 	  <Compile Remove="BackgroundJobs\**" />
 	  <Compile Remove="ExternalServices\**" />
 	  <Compile Remove="Messaging\**" />
+	  <Compile Remove="Storage\**" />
 	  <EmbeddedResource Remove="BackgroundJobs\**" />
 	  <EmbeddedResource Remove="ExternalServices\**" />
 	  <EmbeddedResource Remove="Messaging\**" />
+	  <EmbeddedResource Remove="Storage\**" />
 	  <None Remove="BackgroundJobs\**" />
 	  <None Remove="ExternalServices\**" />
 	  <None Remove="Messaging\**" />
+	  <None Remove="Storage\**" />
 	</ItemGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -21,9 +24,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\PropertyManagement.Application\PropertyManagement.Application.csproj" />
 		<ProjectReference Include="..\PropertyManagement.Domain\PropertyManagement.Domain.csproj" />
-	</ItemGroup>
-	<ItemGroup>
-		<Folder Include="Storage\" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="MailKit" Version="4.18.1" />
