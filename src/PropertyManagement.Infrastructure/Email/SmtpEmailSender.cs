@@ -1,4 +1,4 @@
-﻿using MailKit.Security;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
 using MimeKit;
 using PropertyManagement.Application.Abstractions.Email;
@@ -24,11 +24,9 @@ public sealed class SmtpEmailSender(
         cancellationToken.ThrowIfCancellationRequested();
 
         var message = new MimeMessage();
-
         message.From.Add(new MailboxAddress(
             _options.FromName,
             _options.FromEmail));
-
         message.To.Add(MailboxAddress.Parse(recipient));
         message.Subject = subject;
 
@@ -51,10 +49,13 @@ public sealed class SmtpEmailSender(
             secureSocketOption,
             cancellationToken);
 
-        await smtpClient.AuthenticateAsync(
-            _options.Username,
-            _options.Password,
-            cancellationToken);
+        if (!string.IsNullOrWhiteSpace(_options.Username))
+        {
+            await smtpClient.AuthenticateAsync(
+                _options.Username,
+                _options.Password,
+                cancellationToken);
+        }
 
         await smtpClient.SendAsync(
             message,

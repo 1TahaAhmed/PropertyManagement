@@ -1,3 +1,4 @@
+using PropertyManagement.Application.Abstractions.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using PropertyManagement.Application.Abstractions;
@@ -9,7 +10,8 @@ namespace PropertyManagement.Infrastructure.Identity;
 
 public sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
-    IClock clock) : IIdentityService
+    IClock clock,
+    IRefreshTokenRepository refreshTokenRepository) : IIdentityService
 {
     private static ErrorType MapIdentityErrorType(string errorCode)
     {
@@ -83,7 +85,7 @@ public sealed class IdentityService(
                 new Error(
                     Code: "Identity.InvalidCredentials",
                     Message: "Invalid email or password.",
-                    Type: ErrorType.Validation));
+                    Type: ErrorType.Unauthorized));
         }
 
         if (await userManager.IsLockedOutAsync(user))
@@ -114,7 +116,7 @@ public sealed class IdentityService(
                 new Error(
                     Code: "Identity.InvalidCredentials",
                     Message: "Invalid email or password.",
-                    Type: ErrorType.Validation));
+                    Type: ErrorType.Unauthorized));
         }
 
         // Only after credentials are authenticated do we check email confirmation
@@ -366,6 +368,8 @@ public sealed class IdentityService(
         var identityResult = await userManager.ResetPasswordAsync(user, token, newPassword);
         if (identityResult.Succeeded)
         {
+            await refreshTokenRepository.RevokeAllUserTokensAsync(user.Id, clock.UtcNow, cancellationToken);
+            await refreshTokenRepository.SaveChangesAsync(cancellationToken);
             return Result.Success();
         }
 

@@ -1,9 +1,8 @@
-﻿using PropertyManagement.Domain.Enums;
+using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Api.Contracts.Units;
 
 public sealed record CreateUnitRequest(
-    Guid OrganizationId,
     string UnitNumber,
     UnitType Type,
     decimal MarketRent,
@@ -11,10 +10,10 @@ public sealed record CreateUnitRequest(
     int Bedrooms = 0,
     int Bathrooms = 0,
     decimal SquareMeters = 0,
-    string Description = "");
+    string Description = "",
+    Guid OrganizationId = default);
 
 public sealed record UpdateUnitRequest(
-    Guid OrganizationId,
     string UnitNumber,
     string RowVersion,
     UnitType Type,
@@ -23,6 +22,9 @@ public sealed record UpdateUnitRequest(
     int Bedrooms = 0,
     int Bathrooms = 0,
     decimal SquareMeters = 0,
-    string Description = "");
+    string Description = "",
+    Guid OrganizationId = default);
 
-public sealed record ChangeUnitStatusRequest(Guid OrganizationId, UnitOperationalStatus NewStatus);
+public sealed record ChangeUnitStatusRequest(
+    UnitOperationalStatus NewStatus,
+    Guid OrganizationId = default);

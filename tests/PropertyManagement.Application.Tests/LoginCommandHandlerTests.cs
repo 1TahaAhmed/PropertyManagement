@@ -49,7 +49,7 @@ public sealed class LoginCommandHandlerTests
                 new Error(
                     Code: "Identity.InvalidCredentials",
                     Message: "Invalid email or password.",
-                    Type: ErrorType.Validation)));
+                    Type: ErrorType.Unauthorized)));
 
         var result = await _handler.Handle(command, CancellationToken.None);
 

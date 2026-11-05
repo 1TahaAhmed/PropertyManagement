@@ -57,6 +57,8 @@ namespace PropertyManagement.Infrastructure
             .AddDefaultTokenProviders();
 
             services.AddScoped<IIdentityService, IdentityService>();
+            services.AddHttpContextAccessor();
+            services.AddScoped<ICurrentUser, CurrentUser>();
 
             // JWT Options & Authentication
             services.AddOptions<JwtOptions>()

@@ -1,8 +1,12 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PropertyManagement.Api.Authorization;
 using PropertyManagement.Api.Contracts.Properties;
 using PropertyManagement.Api.Extensions;
+using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Application.Common.Models;
+using PropertyManagement.Application.Common.Security;
 using PropertyManagement.Application.Features.Properties.Archive;
 using PropertyManagement.Application.Features.Properties.Create;
 using PropertyManagement.Application.Features.Properties.GetById;
@@ -13,20 +17,38 @@ using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/v1/[controller]")]
-public sealed class PropertiesController(ISender sender) : ControllerBase
+public sealed class PropertiesController(
+    ISender sender,
+    ICurrentUser currentUser) : ControllerBase
 {
+    private Guid? CurrentOrgId => currentUser.OrganizationId;
+
     [HttpPost]
+    [HasPermission(Permissions.Properties.Create)]
     [ProducesResponseType(typeof(PropertyResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create(
         [FromBody] CreatePropertyRequest request,
         CancellationToken cancellationToken)
     {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
         var command = new CreatePropertyCommand(
-            OrganizationId: request.OrganizationId,
+            OrganizationId: CurrentOrgId.Value,
             Name: request.Name,
             Address: request.Address,
             Type: request.Type,
@@ -42,14 +64,28 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     }
 
     [HttpGet("{id:guid}")]
+    [HasPermission(Permissions.Properties.Read)]
     [ProducesResponseType(typeof(PropertyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromQuery] Guid organizationId,
+        [FromQuery] Guid? organizationId,
         CancellationToken cancellationToken)
     {
-        var query = new GetPropertyByIdQuery(organizationId, id);
+        var targetOrgId = CurrentOrgId ?? organizationId;
+        if (!targetOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var query = new GetPropertyByIdQuery(targetOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -60,10 +96,13 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Properties.Read)]
     [ProducesResponseType(typeof(PagedList<PropertyResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPaged(
-        [FromQuery] Guid organizationId,
+        [FromQuery] Guid? organizationId,
         [FromQuery] string? searchTerm,
         [FromQuery] PropertyStatus? status,
         [FromQuery] PropertyType? type,
@@ -71,7 +110,18 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var query = new GetPropertiesQuery(organizationId, searchTerm, status, type, pageNumber, pageSize);
+        var targetOrgId = CurrentOrgId ?? organizationId;
+        if (!targetOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var query = new GetPropertiesQuery(targetOrgId.Value, searchTerm, status, type, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -82,8 +132,11 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Properties.Update)]
     [ProducesResponseType(typeof(PropertyResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Update(
@@ -91,8 +144,18 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
         [FromBody] UpdatePropertyRequest request,
         CancellationToken cancellationToken)
     {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
         var command = new UpdatePropertyCommand(
-            OrganizationId: request.OrganizationId,
+            OrganizationId: CurrentOrgId.Value,
             PropertyId: id,
             Name: request.Name,
             Address: request.Address,
@@ -110,14 +173,28 @@ public sealed class PropertiesController(ISender sender) : ControllerBase
     }
 
     [HttpPost("{id:guid}/archive")]
+    [HasPermission(Permissions.Properties.Archive)]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Archive(
         Guid id,
-        [FromQuery] Guid organizationId,
+        [FromQuery] Guid? organizationId,
         CancellationToken cancellationToken)
     {
-        var command = new ArchivePropertyCommand(id, organizationId);
+        var targetOrgId = CurrentOrgId ?? organizationId;
+        if (!targetOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var command = new ArchivePropertyCommand(id, targetOrgId.Value);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

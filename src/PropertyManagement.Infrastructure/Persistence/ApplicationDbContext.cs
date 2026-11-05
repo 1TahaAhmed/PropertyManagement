@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Security;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Authentication;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
@@ -18,16 +20,41 @@ namespace PropertyManagement.Infrastructure.Persistence
         Guid>,
         IUnitOfWork
     {
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+        private readonly ICurrentUser? _currentUser;
+
+        public ApplicationDbContext(
+            DbContextOptions<ApplicationDbContext> options,
+            ICurrentUser? currentUser = null)
             : base(options)
         {
+            _currentUser = currentUser;
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
             builder.ApplyConfigurationsFromAssembly(
                 typeof(ApplicationDbContext).Assembly);
+
+            // Tenant Isolation Global Query Filters
+            builder.Entity<Property>().HasQueryFilter(p =>
+                _currentUser == null ||
+                !_currentUser.IsAuthenticated ||
+                !_currentUser.OrganizationId.HasValue ||
+                p.OrganizationId == _currentUser.OrganizationId.Value);
+
+            builder.Entity<Unit>().HasQueryFilter(u =>
+                _currentUser == null ||
+                !_currentUser.IsAuthenticated ||
+                !_currentUser.OrganizationId.HasValue ||
+                u.OrganizationId == _currentUser.OrganizationId.Value);
+
+            builder.Entity<Tenant>().HasQueryFilter(t =>
+                _currentUser == null ||
+                !_currentUser.IsAuthenticated ||
+                !_currentUser.OrganizationId.HasValue ||
+                t.OrganizationId == _currentUser.OrganizationId.Value);
         }
 
         public DbSet<EmailConfirmationChallenge>
@@ -45,6 +72,38 @@ namespace PropertyManagement.Infrastructure.Persistence
         public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
         public DbSet<Invitation> Invitations => Set<Invitation>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            if (_currentUser?.IsAuthenticated == true && _currentUser.OrganizationId.HasValue)
+            {
+                var currentOrgId = _currentUser.OrganizationId.Value;
+
+                foreach (var entry in ChangeTracker.Entries<IOrganizationScoped>())
+                {
+                    if (entry.State == EntityState.Added)
+                    {
+                        if (entry.Entity.OrganizationId == Guid.Empty)
+                        {
+                            entry.Property(nameof(IOrganizationScoped.OrganizationId)).CurrentValue = currentOrgId;
+                        }
+                        else if (entry.Entity.OrganizationId != currentOrgId)
+                        {
+                            throw new InvalidOperationException("Cross-tenant write operation detected.");
+                        }
+                    }
+                    else if (entry.State == EntityState.Modified)
+                    {
+                        if (entry.Entity.OrganizationId != currentOrgId)
+                        {
+                            throw new InvalidOperationException("Cross-tenant modification detected.");
+                        }
+                    }
+                }
+            }
+
+            return await base.SaveChangesAsync(cancellationToken);
+        }
 
         public async Task<IDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
         {

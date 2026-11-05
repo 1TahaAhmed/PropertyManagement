@@ -93,14 +93,14 @@ public sealed class RegisterCompanyCommandHandler(
                     codeIssueResult.Errors.ToArray());
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await transaction.RollbackAsync(cancellationToken);
             await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
             return Result<RegisterCompanyResponse>.Failure(
                 new Error(
                     Code: "EmailConfirmation.SendFailed",
-                    Message: $"Failed to send confirmation email: {ex.Message}",
+                    Message: "Failed to send confirmation email. Please try again later.",
                     Type: ErrorType.Failure));
         }
 

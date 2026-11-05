@@ -47,13 +47,13 @@ public sealed class RegisterCommandHandler(
                     codeIssueResult.Errors.ToArray());
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             await identityService.DeleteUserAsync(identityUser.UserId, CancellationToken.None);
             return Result<RegisterResponse>.Failure(
                 new Error(
                     Code: "EmailConfirmation.SendFailed",
-                    Message: $"Failed to send confirmation email: {ex.Message}",
+                    Message: "Failed to send confirmation email. Please try again later.",
                     Type: ErrorType.Failure));
         }
 

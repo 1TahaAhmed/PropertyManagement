@@ -38,17 +38,26 @@ public sealed class RefreshTokenCommandHandler(
 
         if (existingToken.IsRevoked)
         {
-            await refreshTokenRepository.RevokeAllUserTokensAsync(
-                existingToken.UserId,
-                clock.UtcNow,
-                cancellationToken);
+            if (existingToken.ReplacedByTokenHash != null)
+            {
+                await refreshTokenRepository.RevokeAllUserTokensAsync(
+                    existingToken.UserId,
+                    clock.UtcNow,
+                    cancellationToken);
 
-            await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+                await refreshTokenRepository.SaveChangesAsync(cancellationToken);
+
+                return Result<RefreshTokenResponse>.Failure(
+                    new Error(
+                        Code: "Authentication.CompromisedRefreshToken",
+                        Message: "Suspicious token reuse detected. All active sessions for this account have been terminated.",
+                        Type: ErrorType.Unauthorized));
+            }
 
             return Result<RefreshTokenResponse>.Failure(
                 new Error(
-                    Code: "Authentication.CompromisedRefreshToken",
-                    Message: "Suspicious token reuse detected. All active sessions for this account have been terminated.",
+                    Code: "Authentication.RevokedRefreshToken",
+                    Message: "The refresh token has been revoked. Please log in again.",
                     Type: ErrorType.Unauthorized));
         }
 
@@ -99,14 +108,19 @@ public sealed class RefreshTokenCommandHandler(
                 o.Organization.Id == existingToken.OrganizationId.Value &&
                 o.Organization.Status == OrganizationStatus.Active);
 
-            if (matched.Organization is not null)
+            if (matched.Organization is null)
             {
-                activeOrgId = matched.Organization.Id;
-                activeRole = matched.Roles.Count > 0 ? matched.Roles[0].ToString() : null;
+                return Result<RefreshTokenResponse>.Failure(
+                    new Error(
+                        Code: "Authentication.OrganizationMembershipRevoked",
+                        Message: "Your membership in this organization is no longer active. Please log in again.",
+                        Type: ErrorType.Unauthorized));
             }
-        }
 
-        if (!activeOrgId.HasValue && userOrganizations.Count > 0)
+            activeOrgId = matched.Organization.Id;
+            activeRole = matched.Roles.Count > 0 ? matched.Roles[0].ToString() : null;
+        }
+        else if (userOrganizations.Count > 0)
         {
             var primary = userOrganizations.FirstOrDefault(o => o.Organization.Status == OrganizationStatus.Active);
             if (primary.Organization is not null)
