@@ -37,24 +37,22 @@ namespace PropertyManagement.Infrastructure.Persistence
             builder.ApplyConfigurationsFromAssembly(
                 typeof(ApplicationDbContext).Assembly);
 
-            // Tenant Isolation Global Query Filters
+            // Fail-Closed Tenant Isolation Global Query Filters
+            // Unauthenticated or un-scoped queries match Guid.Empty (returns 0 rows, never leaking other tenants)
             builder.Entity<Property>().HasQueryFilter(p =>
-                _currentUser == null ||
-                !_currentUser.IsAuthenticated ||
-                !_currentUser.OrganizationId.HasValue ||
-                p.OrganizationId == _currentUser.OrganizationId.Value);
+                p.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
 
             builder.Entity<Unit>().HasQueryFilter(u =>
-                _currentUser == null ||
-                !_currentUser.IsAuthenticated ||
-                !_currentUser.OrganizationId.HasValue ||
-                u.OrganizationId == _currentUser.OrganizationId.Value);
+                u.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
 
             builder.Entity<Tenant>().HasQueryFilter(t =>
-                _currentUser == null ||
-                !_currentUser.IsAuthenticated ||
-                !_currentUser.OrganizationId.HasValue ||
-                t.OrganizationId == _currentUser.OrganizationId.Value);
+                t.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
         }
 
         public DbSet<EmailConfirmationChallenge>

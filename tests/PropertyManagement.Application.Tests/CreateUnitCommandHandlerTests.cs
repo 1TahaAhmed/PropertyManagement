@@ -29,7 +29,7 @@ public sealed class CreateUnitCommandHandlerTests
     {
         var propertyId = Guid.NewGuid();
         var organizationId = Guid.NewGuid();
-        _propertyRepository.GetByIdAsync(propertyId, Arg.Any<CancellationToken>())
+        _propertyRepository.GetByIdAsync(propertyId, Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((Property?)null);
 
         var command = new CreateUnitCommand(organizationId, propertyId, "101", UnitType.Apartment, 5000);
@@ -48,7 +48,7 @@ public sealed class CreateUnitCommandHandlerTests
         var attackingOrganization = Guid.NewGuid();
 
         var property = Property.Create(propertyOrganization, "Tower", "Cairo", PropertyType.Residential, FixedNow);
-        _propertyRepository.GetByIdAsync(propertyId, Arg.Any<CancellationToken>())
+        _propertyRepository.GetByIdAsync(propertyId, Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(property);
 
         var command = new CreateUnitCommand(attackingOrganization, propertyId, "101", UnitType.Apartment, 5000);
@@ -66,7 +66,7 @@ public sealed class CreateUnitCommandHandlerTests
         var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
         property.Archive(FixedNow);
 
-        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
+        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(property);
 
         var command = new CreateUnitCommand(organizationId, property.Id, "101", UnitType.Apartment, 5000);
@@ -83,7 +83,7 @@ public sealed class CreateUnitCommandHandlerTests
         var organizationId = Guid.NewGuid();
         var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
 
-        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
+        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(property);
 
         _unitRepository.ExistsByNumberAsync(organizationId, property.Id, "101", Arg.Any<CancellationToken>())
@@ -103,7 +103,7 @@ public sealed class CreateUnitCommandHandlerTests
         var organizationId = Guid.NewGuid();
         var property = Property.Create(organizationId, "Tower", "Cairo", PropertyType.Residential, FixedNow);
 
-        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<CancellationToken>())
+        _propertyRepository.GetByIdAsync(property.Id, Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns(property);
 
         _unitRepository.ExistsByNumberAsync(organizationId, property.Id, "101", Arg.Any<CancellationToken>())

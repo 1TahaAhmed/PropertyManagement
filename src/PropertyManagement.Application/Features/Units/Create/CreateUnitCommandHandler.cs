@@ -17,7 +17,7 @@ public sealed class CreateUnitCommandHandler(
 {
     public async Task<Result<UnitResponse>> Handle(CreateUnitCommand request, CancellationToken cancellationToken)
     {
-        var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
+        var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.OrganizationId, cancellationToken);
 
         if (property is null || property.OrganizationId != request.OrganizationId)
         {

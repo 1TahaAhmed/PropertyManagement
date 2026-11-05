@@ -78,11 +78,9 @@ public sealed class UnitsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromQuery] Guid? organizationId,
         CancellationToken cancellationToken)
     {
-        var targetOrgId = CurrentOrgId ?? organizationId;
-        if (!targetOrgId.HasValue)
+        if (!CurrentOrgId.HasValue)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -92,7 +90,7 @@ public sealed class UnitsController(
             });
         }
 
-        var query = new GetUnitByIdQuery(targetOrgId.Value, id);
+        var query = new GetUnitByIdQuery(CurrentOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -110,7 +108,6 @@ public sealed class UnitsController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetByProperty(
         Guid propertyId,
-        [FromQuery] Guid? organizationId,
         [FromQuery] UnitOperationalStatus? status,
         [FromQuery] UnitType? type,
         [FromQuery] decimal? minRent,
@@ -119,8 +116,7 @@ public sealed class UnitsController(
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var targetOrgId = CurrentOrgId ?? organizationId;
-        if (!targetOrgId.HasValue)
+        if (!CurrentOrgId.HasValue)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -130,7 +126,7 @@ public sealed class UnitsController(
             });
         }
 
-        var query = new GetUnitsByPropertyQuery(targetOrgId.Value, propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
+        var query = new GetUnitsByPropertyQuery(CurrentOrgId.Value, propertyId, status, type, minRent, maxRent, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {

@@ -16,7 +16,7 @@ public sealed class UpdateUnitCommandHandler(
 {
     public async Task<Result<UnitResponse>> Handle(UpdateUnitCommand request, CancellationToken cancellationToken)
     {
-        var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.OrganizationId, cancellationToken);
         if (unit is null || unit.OrganizationId != request.OrganizationId)
         {
             return Result<UnitResponse>.Failure(new Error(
@@ -25,7 +25,7 @@ public sealed class UpdateUnitCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
-        var property = await propertyRepository.GetByIdAsync(unit.PropertyId, cancellationToken);
+        var property = await propertyRepository.GetByIdAsync(unit.PropertyId, request.OrganizationId, cancellationToken);
 
         if (property is null || property.Status == PropertyStatus.Archived)
         {

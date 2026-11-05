@@ -71,11 +71,9 @@ public sealed class PropertiesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetById(
         Guid id,
-        [FromQuery] Guid? organizationId,
         CancellationToken cancellationToken)
     {
-        var targetOrgId = CurrentOrgId ?? organizationId;
-        if (!targetOrgId.HasValue)
+        if (!CurrentOrgId.HasValue)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -85,7 +83,7 @@ public sealed class PropertiesController(
             });
         }
 
-        var query = new GetPropertyByIdQuery(targetOrgId.Value, id);
+        var query = new GetPropertyByIdQuery(CurrentOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -102,7 +100,6 @@ public sealed class PropertiesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPaged(
-        [FromQuery] Guid? organizationId,
         [FromQuery] string? searchTerm,
         [FromQuery] PropertyStatus? status,
         [FromQuery] PropertyType? type,
@@ -110,8 +107,7 @@ public sealed class PropertiesController(
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
     {
-        var targetOrgId = CurrentOrgId ?? organizationId;
-        if (!targetOrgId.HasValue)
+        if (!CurrentOrgId.HasValue)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -121,7 +117,7 @@ public sealed class PropertiesController(
             });
         }
 
-        var query = new GetPropertiesQuery(targetOrgId.Value, searchTerm, status, type, pageNumber, pageSize);
+        var query = new GetPropertiesQuery(CurrentOrgId.Value, searchTerm, status, type, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
         {
@@ -180,11 +176,9 @@ public sealed class PropertiesController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Archive(
         Guid id,
-        [FromQuery] Guid? organizationId,
         CancellationToken cancellationToken)
     {
-        var targetOrgId = CurrentOrgId ?? organizationId;
-        if (!targetOrgId.HasValue)
+        if (!CurrentOrgId.HasValue)
         {
             return Unauthorized(new ProblemDetails
             {
@@ -194,7 +188,7 @@ public sealed class PropertiesController(
             });
         }
 
-        var command = new ArchivePropertyCommand(id, targetOrgId.Value);
+        var command = new ArchivePropertyCommand(id, CurrentOrgId.Value);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

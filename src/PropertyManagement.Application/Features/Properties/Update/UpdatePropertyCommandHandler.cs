@@ -15,7 +15,7 @@ public sealed class UpdatePropertyCommandHandler(
 {
     public async Task<Result<PropertyResponse>> Handle(UpdatePropertyCommand request, CancellationToken cancellationToken)
     {
-        var property = await propertyRepository.GetByIdAsync(request.PropertyId, cancellationToken);
+        var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.OrganizationId, cancellationToken);
         
         if (property is null || property.OrganizationId != request.OrganizationId)
         {

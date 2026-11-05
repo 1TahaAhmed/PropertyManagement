@@ -15,7 +15,7 @@ public sealed class ChangeUnitStatusCommandHandler(
 {
     public async Task<Result> Handle(ChangeUnitStatusCommand request, CancellationToken cancellationToken)
     {
-        var unit = await unitRepository.GetByIdAsync(request.UnitId, cancellationToken);
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.OrganizationId, cancellationToken);
         if (unit is null || unit.OrganizationId != request.OrganizationId)
         {
             return Result.Failure(new Error(
@@ -24,7 +24,7 @@ public sealed class ChangeUnitStatusCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
-        var property = await propertyRepository.GetByIdAsync(unit.PropertyId, cancellationToken);
+        var property = await propertyRepository.GetByIdAsync(unit.PropertyId, request.OrganizationId, cancellationToken);
         if (property is null || property.Status == PropertyStatus.Archived)
         {
             return Result.Failure(new Error("Property.Archived", "Cannot modify unit of an archived property."));
