@@ -112,6 +112,7 @@ namespace PropertyManagement.Infrastructure.Persistence
 
     internal sealed class EfDbTransaction(IDbContextTransaction transaction) : IDbTransaction
     {
+    
         public Task CommitAsync(CancellationToken cancellationToken = default)
             => transaction.CommitAsync(cancellationToken);
 
@@ -123,5 +124,6 @@ namespace PropertyManagement.Infrastructure.Persistence
 
         public void Dispose()
             => transaction.Dispose();
+    
     }
 }
