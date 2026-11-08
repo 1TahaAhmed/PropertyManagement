@@ -1,3 +1,4 @@
+using PropertyManagement.Application.Abstractions.Residents;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -188,6 +189,7 @@ namespace PropertyManagement.Infrastructure
                 DataProtectionVerificationCodeProtector>();
 
             services.AddScoped<IPropertyRepository, PropertyRepository>();
+            services.AddScoped<IResidentRepository, ResidentRepository>();
             services.AddScoped<IUnitRepository, UnitRepository>();
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());

@@ -26,4 +26,13 @@ public static class Permissions
         public const string Deactivate = "Permissions.Tenants.Deactivate";
         public const string Blacklist = "Permissions.Tenants.Blacklist";
     }
+
+    public static class Residents
+    {
+        public const string Read = "Permissions.Residents.Read";
+        public const string Create = "Permissions.Residents.Create";
+        public const string Update = "Permissions.Residents.Update";
+        public const string Archive = "Permissions.Residents.Archive";
+        public const string ManageContacts = "Permissions.Residents.ManageContacts";
+    }
 }

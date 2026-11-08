@@ -30,7 +30,6 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         }
 
         var permissions = GetPermissionsForRole(role);
-
         if (permissions.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
@@ -57,9 +56,13 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Tenants.Create,
                 Permissions.Tenants.Update,
                 Permissions.Tenants.Deactivate,
-                Permissions.Tenants.Blacklist
+                Permissions.Tenants.Blacklist,
+                Permissions.Residents.Read,
+                Permissions.Residents.Create,
+                Permissions.Residents.Update,
+                Permissions.Residents.Archive,
+                Permissions.Residents.ManageContacts
             ],
-
             MembershipRole.PropertyManager =>
             [
                 Permissions.Properties.Read,
@@ -72,16 +75,19 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Tenants.Read,
                 Permissions.Tenants.Create,
                 Permissions.Tenants.Update,
-                Permissions.Tenants.Deactivate
+                Permissions.Tenants.Deactivate,
+                Permissions.Residents.Read,
+                Permissions.Residents.Create,
+                Permissions.Residents.Update,
+                Permissions.Residents.ManageContacts
             ],
-
             MembershipRole.Staff =>
             [
                 Permissions.Properties.Read,
                 Permissions.Units.Read,
-                Permissions.Tenants.Read
+                Permissions.Tenants.Read,
+                Permissions.Residents.Read
             ],
-
             _ => []
         };
     }

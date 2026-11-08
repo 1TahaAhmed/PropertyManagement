@@ -8,6 +8,7 @@ using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Authentication;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
+using PropertyManagement.Domain.Entities.Residents;
 using PropertyManagement.Domain.Entities.Tenants;
 using PropertyManagement.Infrastructure.Identity;
 
@@ -53,6 +54,16 @@ namespace PropertyManagement.Infrastructure.Persistence
                 t.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                     ? _currentUser.OrganizationId.Value
                     : Guid.Empty));
+
+            builder.Entity<Resident>().HasQueryFilter(r =>
+                r.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
+
+            builder.Entity<EmergencyContact>().HasQueryFilter(e =>
+                e.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
         }
 
         public DbSet<EmailConfirmationChallenge>
@@ -66,6 +77,8 @@ namespace PropertyManagement.Infrastructure.Persistence
         public DbSet<Property> Properties => Set<Property>();
         public DbSet<Unit> Units => Set<Unit>();
         public DbSet<Tenant> Tenants => Set<Tenant>();
+        public DbSet<Resident> Residents => Set<Resident>();
+        public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
         public DbSet<Organization> Organizations => Set<Organization>();
         public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
         public DbSet<Invitation> Invitations => Set<Invitation>();
@@ -73,29 +86,42 @@ namespace PropertyManagement.Infrastructure.Persistence
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            if (_currentUser?.IsAuthenticated == true && _currentUser.OrganizationId.HasValue)
+            if (_currentUser != null)
             {
-                var currentOrgId = _currentUser.OrganizationId.Value;
-
-                foreach (var entry in ChangeTracker.Entries<IOrganizationScoped>())
+                if (_currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue)
                 {
-                    if (entry.State == EntityState.Added)
+                    var currentOrgId = _currentUser.OrganizationId.Value;
+
+                    foreach (var entry in ChangeTracker.Entries<IOrganizationScoped>())
                     {
-                        if (entry.Entity.OrganizationId == Guid.Empty)
+                        if (entry.State == EntityState.Added)
                         {
-                            entry.Property(nameof(IOrganizationScoped.OrganizationId)).CurrentValue = currentOrgId;
+                            if (entry.Entity.OrganizationId == Guid.Empty)
+                            {
+                                entry.Property(nameof(IOrganizationScoped.OrganizationId)).CurrentValue = currentOrgId;
+                            }
+                            else if (entry.Entity.OrganizationId != currentOrgId)
+                            {
+                                throw new InvalidOperationException("Cross-tenant write operation detected.");
+                            }
                         }
-                        else if (entry.Entity.OrganizationId != currentOrgId)
+                        else if (entry.State == EntityState.Modified)
                         {
-                            throw new InvalidOperationException("Cross-tenant write operation detected.");
+                            if (entry.Entity.OrganizationId != currentOrgId)
+                            {
+                                throw new InvalidOperationException("Cross-tenant modification detected.");
+                            }
                         }
                     }
-                    else if (entry.State == EntityState.Modified)
+                }
+                else
+                {
+                    var unauthorizedEntries = ChangeTracker.Entries<IOrganizationScoped>()
+                        .Any(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+
+                    if (unauthorizedEntries)
                     {
-                        if (entry.Entity.OrganizationId != currentOrgId)
-                        {
-                            throw new InvalidOperationException("Cross-tenant modification detected.");
-                        }
+                        throw new InvalidOperationException("An active tenant context is required for organization-scoped write operations.");
                     }
                 }
             }
