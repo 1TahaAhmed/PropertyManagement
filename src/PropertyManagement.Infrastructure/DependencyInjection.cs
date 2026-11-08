@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Application.Abstractions.Residents;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -105,6 +107,41 @@ namespace PropertyManagement.Infrastructure
                     ValidAudience = audience,
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnChallenge = async context =>
+                    {
+                        context.HandleResponse();
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        context.Response.ContentType = "application/problem+json";
+
+                        var problemDetails = new ProblemDetails
+                        {
+                            Status = StatusCodes.Status401Unauthorized,
+                            Title = "Unauthorized",
+                            Detail = "Authentication credentials are required to access this resource. Please provide a valid Bearer token.",
+                            Instance = context.Request.Path
+                        };
+
+                        await context.Response.WriteAsJsonAsync(problemDetails);
+                    },
+                    OnForbidden = async context =>
+                    {
+                        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                        context.Response.ContentType = "application/problem+json";
+
+                        var problemDetails = new ProblemDetails
+                        {
+                            Status = StatusCodes.Status403Forbidden,
+                            Title = "Forbidden",
+                            Detail = "You do not have the required permissions to access this resource.",
+                            Instance = context.Request.Path
+                        };
+
+                        await context.Response.WriteAsJsonAsync(problemDetails);
+                    }
                 };
             });
 
