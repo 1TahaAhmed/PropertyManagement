@@ -38,8 +38,6 @@ namespace PropertyManagement.Infrastructure.Persistence
             builder.ApplyConfigurationsFromAssembly(
                 typeof(ApplicationDbContext).Assembly);
 
-            // Fail-Closed Tenant Isolation Global Query Filters
-            // Unauthenticated or un-scoped queries match Guid.Empty (returns 0 rows, never leaking other tenants)
             builder.Entity<Property>().HasQueryFilter(p =>
                 p.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                     ? _currentUser.OrganizationId.Value

@@ -7,13 +7,11 @@ using PropertyManagement.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.ProducesAttribute("application/json"));
 });
 
-// Configure OpenAPI / Swagger
 builder.Services.AddSwaggerGen(options =>
 {
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
@@ -45,7 +43,6 @@ builder.Services.AddApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseExceptionHandler();
@@ -55,7 +52,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // Automatically apply pending migrations during startup in development / docker
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
