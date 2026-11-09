@@ -22,13 +22,7 @@ public static class SwaggerExtensions
 
             options.AddSecurityDefinition("Bearer", scheme);
 
-            options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
-                }
-            });
+            options.OperationFilter<AuthorizeCheckOperationFilter>();
         });
 
         return services;
