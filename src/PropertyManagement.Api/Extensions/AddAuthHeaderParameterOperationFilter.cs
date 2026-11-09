@@ -4,7 +4,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace PropertyManagement.Api.Extensions;
 
-public sealed class AuthorizeCheckOperationFilter : IOperationFilter
+public sealed class AddAuthHeaderParameterOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
@@ -15,15 +15,16 @@ public sealed class AuthorizeCheckOperationFilter : IOperationFilter
 
         if (hasAuthorize && !allowAnonymous)
         {
-            operation.Responses?.TryAdd("401", new OpenApiResponse { Description = "Unauthorized" });
-            operation.Responses?.TryAdd("403", new OpenApiResponse { Description = "Forbidden" });
-
-            operation.Security ??= new List<OpenApiSecurityRequirement>();
-            operation.Security.Add(new OpenApiSecurityRequirement
+            operation.Parameters ??= new List<IOpenApiParameter>();
+            operation.Parameters.Add(new OpenApiParameter
             {
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Description = "Bearer <token>",
+                Required = false,
+                Schema = new OpenApiSchema
                 {
-                    new OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
+                    Type = JsonSchemaType.String
                 }
             });
         }

@@ -22,7 +22,7 @@ public static class SwaggerExtensions
 
             options.AddSecurityDefinition("Bearer", scheme);
 
-            options.OperationFilter<AuthorizeCheckOperationFilter>();
+            options.OperationFilter<AddAuthHeaderParameterOperationFilter>();
         });
 
         return services;
