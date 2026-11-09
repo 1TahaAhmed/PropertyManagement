@@ -106,7 +106,7 @@ namespace PropertyManagement.Infrastructure
                     ValidateAudience = true,
                     ValidAudience = audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.Zero
+                    ClockSkew = TimeSpan.FromMinutes(5)
                 };
 
                 options.Events = new JwtBearerEvents
