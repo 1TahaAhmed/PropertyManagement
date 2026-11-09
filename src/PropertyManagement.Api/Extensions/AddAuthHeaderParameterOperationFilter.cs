@@ -18,9 +18,9 @@ public sealed class AddAuthHeaderParameterOperationFilter : IOperationFilter
             operation.Parameters ??= new List<IOpenApiParameter>();
             operation.Parameters.Add(new OpenApiParameter
             {
-                Name = "Authorization",
+                Name = "X-Authorization",
                 In = ParameterLocation.Header,
-                Description = "Bearer <token>",
+                Description = "Enter your JWT token (with or without 'Bearer '). Swagger UI will NOT block this header!",
                 Required = false,
                 Schema = new OpenApiSchema
                 {
