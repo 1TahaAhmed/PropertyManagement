@@ -5,10 +5,6 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<ItemGroup>
-	  <Compile Remove="BackgroundJobs\**" />
-	  <Compile Remove="ExternalServices\**" />
-	  <Compile Remove="Messaging\**" />
-	  <Compile Remove="Storage\**" />
 	  <EmbeddedResource Remove="BackgroundJobs\**" />
 	  <EmbeddedResource Remove="ExternalServices\**" />
 	  <EmbeddedResource Remove="Messaging\**" />

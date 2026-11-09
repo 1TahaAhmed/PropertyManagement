@@ -22,7 +22,7 @@ namespace PropertyManagement.Api.Controllers;
 [Route("api/v1/[controller]")]
 public sealed class PropertiesController(
     ISender sender,
-    ICurrentUser currentUser) : ControllerBase
+    ICurrentUser currentUser) : ApiControllerBase
 {
     private Guid? CurrentOrgId => currentUser.OrganizationId;
 

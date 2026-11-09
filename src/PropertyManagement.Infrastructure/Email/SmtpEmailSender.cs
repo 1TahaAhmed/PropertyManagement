@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using MailKit.Security;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MimeKit;
@@ -10,7 +11,8 @@ namespace PropertyManagement.Infrastructure.Email;
 
 public sealed class SmtpEmailSender(
     IOptions<SmtpOptions> options,
-    ILogger<SmtpEmailSender> logger) : IEmailSender
+    ILogger<SmtpEmailSender> logger,
+    IHostEnvironment environment) : IEmailSender
 {
     private readonly SmtpOptions _options = options.Value;
 
@@ -26,17 +28,16 @@ public sealed class SmtpEmailSender(
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var match = Regex.Match(body, @"([0-9]{6})");
-        var codeNotice = match.Success ? $" [VERIFICATION CODE: {match.Value}]" : string.Empty;
-
-        if (string.IsNullOrWhiteSpace(_options.Host) ||
-            _options.Host.Equals("smtp.example.com", StringComparison.OrdinalIgnoreCase) ||
-            _options.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase))
+        // If in Development and SMTP is explicitly unconfigured or placeholder, use dev logging fallback
+        if (environment.IsDevelopment() &&
+            (string.IsNullOrWhiteSpace(_options.Host) ||
+             _options.Host.Equals("smtp.example.com", StringComparison.OrdinalIgnoreCase) ||
+             _options.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)))
         {
-            logger.LogWarning("⚠️ [DEVELOPMENT EMAIL SENDER] SMTP not configured. Suppressing network send to {Recipient}. Subject: {Subject}{CodeNotice}", recipient, subject, codeNotice);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"\n=========================================\n📧 [EMAIL MOCK / DEV] To: {recipient}\nSubject: {subject}\n{codeNotice}\n=========================================\n");
-            Console.ResetColor();
+            var match = Regex.Match(body, @"([0-9]{6})");
+            var codeNotice = match.Success ? $" [VERIFICATION CODE: {match.Value}]" : string.Empty;
+
+            logger.LogInformation("📧 [DEV EMAIL MOCK] To: {Recipient} | Subject: {Subject}{CodeNotice}", recipient, subject, codeNotice);
             return;
         }
 
@@ -65,10 +66,16 @@ public sealed class SmtpEmailSender(
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "❌ [SMTP SEND FAILED] Failed to send email to {Recipient}. Falling back to console output: {CodeNotice}", recipient, codeNotice);
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine($"\n⚠️ [SMTP FAILED -> FALLBACK DEV CONSOLE]\nRecipient: {recipient}\nSubject: {subject}\n{codeNotice}\nError: {ex.Message}\n");
-            Console.ResetColor();
+            logger.LogError(ex, "Failed to send email to {Recipient}", recipient);
+
+            // In production/staging, rethrow so the error is never silently swallowed
+            if (!environment.IsDevelopment())
+            {
+                throw;
+            }
+
+            // In development, log the failure cleanly without breaking the flow
+            logger.LogWarning("Email delivery failed in development environment for {Recipient}", recipient);
         }
     }
 }

@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Events\**" />
-    <Compile Remove="Exceptions\**" />
-    <Compile Remove="Services\**" />
-    <Compile Remove="ValueObjects\**" />
     <EmbeddedResource Remove="Events\**" />
     <EmbeddedResource Remove="Exceptions\**" />
     <EmbeddedResource Remove="Services\**" />
