@@ -1,3 +1,6 @@
+using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
+
 namespace PropertyManagement.Api.Extensions;
 
 public static class SwaggerExtensions
@@ -8,25 +11,19 @@ public static class SwaggerExtensions
         {
             options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 
-            var scheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+            var securityScheme = new OpenApiSecurityScheme
             {
                 Name = "Authorization",
                 Description = "Enter JWT Bearer token **_only_**",
-                In = Microsoft.OpenApi.ParameterLocation.Header,
-                Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT"
             };
 
-            options.AddSecurityDefinition("Bearer", scheme);
+            options.AddSecurityDefinition("Bearer", securityScheme);
 
-            options.AddSecurityRequirement(doc => new Microsoft.OpenApi.OpenApiSecurityRequirement
-            {
-                {
-                    new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer"),
-                    new List<string>()
-                }
-            });
+            options.OperationFilter<AuthorizeCheckOperationFilter>();
         });
 
         return services;
