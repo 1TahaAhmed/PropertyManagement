@@ -15,20 +15,24 @@ builder.Services.AddControllers(options =>
 builder.Services.AddSwaggerGen(options =>
 {
     options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
-    var scheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+
+    var securityScheme = new Microsoft.OpenApi.OpenApiSecurityScheme
     {
         Name = "Authorization",
+        Description = "Enter JWT Bearer token **_only_**",
+        In = Microsoft.OpenApi.ParameterLocation.Header,
         Type = Microsoft.OpenApi.SecuritySchemeType.Http,
         Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = Microsoft.OpenApi.ParameterLocation.Header,
-        Description = "Enter JWT Bearer token"
+        BearerFormat = "JWT"
     };
-    options.AddSecurityDefinition("Bearer", scheme);
-    options.AddSecurityRequirement(_ => new Microsoft.OpenApi.OpenApiSecurityRequirement
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    var schemeRef = new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer");
+    options.AddSecurityRequirement(new Microsoft.OpenApi.OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer"),
+            schemeRef,
             new List<string>()
         }
     });
