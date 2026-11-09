@@ -1,4 +1,4 @@
-using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi;
 
 namespace PropertyManagement.Api.Extensions;
 
@@ -10,24 +10,22 @@ public static class SwaggerExtensions
         {
             options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 
-            var securityScheme = new OpenApiSecurityScheme
+            var scheme = new OpenApiSecurityScheme
             {
                 Name = "Authorization",
-                Description = "JWT Authorization header using the Bearer scheme. Enter token directly or as 'Bearer {token}'",
+                Description = "Enter JWT Bearer token only",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
-                BearerFormat = "JWT",
-                Reference = new OpenApiSecuritySchemeReference("Bearer")
+                BearerFormat = "JWT"
             };
 
-            options.AddSecurityDefinition("Bearer", securityScheme);
+            options.AddSecurityDefinition("Bearer", scheme);
 
-            // Add global security requirement so ALL endpoints in Swagger get the lock icon
             options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
             {
                 {
-                    securityScheme,
+                    new OpenApiSecuritySchemeReference("Bearer"),
                     new List<string>()
                 }
             });
