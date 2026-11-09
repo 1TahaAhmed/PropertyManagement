@@ -111,17 +111,43 @@ namespace PropertyManagement.Infrastructure
 
                 options.Events = new JwtBearerEvents
                 {
+                    OnAuthenticationFailed = context =>
+                    {
+                        context.HttpContext.Items["JwtAuthError"] = context.Exception.Message;
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine($"\n❌ [JWT AUTH FAILED]: {context.Exception.GetType().Name} - {context.Exception.Message}\n");
+                        Console.ResetColor();
+                        return Task.CompletedTask;
+                    },
                     OnChallenge = async context =>
                     {
                         context.HandleResponse();
                         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                         context.Response.ContentType = "application/problem+json";
 
+                        var authHeader = context.Request.Headers["Authorization"].ToString();
+                        var hasHeader = !string.IsNullOrWhiteSpace(authHeader);
+                        var errorDetail = context.HttpContext.Items["JwtAuthError"]?.ToString();
+
+                        string detailMsg;
+                        if (!hasHeader)
+                        {
+                            detailMsg = "No Authorization header was received by the server. Ensure the request includes 'Authorization: Bearer <token>'.";
+                        }
+                        else if (!string.IsNullOrWhiteSpace(errorDetail))
+                        {
+                            detailMsg = $"JWT validation failed: {errorDetail}";
+                        }
+                        else
+                        {
+                            detailMsg = $"Token rejected. Auth header received was: {(authHeader.Length > 30 ? authHeader[..30] + "..." : authHeader)}";
+                        }
+
                         var problemDetails = new ProblemDetails
                         {
                             Status = StatusCodes.Status401Unauthorized,
                             Title = "Unauthorized",
-                            Detail = "Authentication credentials are required to access this resource. Please provide a valid Bearer token.",
+                            Detail = detailMsg,
                             Instance = context.Request.Path
                         };
 
