@@ -12,31 +12,7 @@ builder.Services.AddControllers(options =>
     options.Filters.Add(new Microsoft.AspNetCore.Mvc.ProducesAttribute("application/json"));
 });
 
-builder.Services.AddSwaggerGen(options =>
-{
-    options.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
-
-    var securityScheme = new Microsoft.OpenApi.OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Description = "Enter JWT Bearer token **_only_**",
-        In = Microsoft.OpenApi.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT"
-    };
-
-    options.AddSecurityDefinition("Bearer", securityScheme);
-
-    var schemeRef = new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer");
-    options.AddSecurityRequirement(new Microsoft.OpenApi.OpenApiSecurityRequirement
-    {
-        {
-            schemeRef,
-            new List<string>()
-        }
-    });
-});
+builder.Services.AddSwaggerDocumentation();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
