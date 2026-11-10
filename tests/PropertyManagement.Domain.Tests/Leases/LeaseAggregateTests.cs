@@ -7,6 +7,7 @@ namespace PropertyManagement.Domain.Tests.Leases;
 public class LeaseAggregateTests
 {
     private readonly Guid _orgId = Guid.NewGuid();
+    private readonly Guid _propertyId = Guid.NewGuid();
     private readonly Guid _unitId = Guid.NewGuid();
     private readonly DateOnly _startDate = new(2026, 1, 1);
     private readonly DateOnly _endDate = new(2026, 12, 31);
@@ -24,11 +25,12 @@ public class LeaseAggregateTests
     public void CreateDraft_WithValidData_InitializesInDraftState()
     {
         // Act
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
 
         // Assert
         Assert.Equal(LeaseStatus.Draft, lease.Status);
         Assert.Equal(_orgId, lease.OrganizationId);
+        Assert.Equal(_propertyId, lease.PropertyId);
         Assert.Equal(_unitId, lease.UnitId);
         Assert.Equal(_startDate, lease.StartDate);
         Assert.Equal(_endDate, lease.EndDate);
@@ -41,17 +43,17 @@ public class LeaseAggregateTests
     {
         // Act & Assert
         Assert.Throws<ArgumentException>(() =>
-            Lease.CreateDraft(_orgId, _unitId, _endDate, _startDate, DefaultTerms, _utcNow));
+            Lease.CreateDraft(_orgId, _propertyId, _unitId, _endDate, _startDate, DefaultTerms, _utcNow));
 
         Assert.Throws<ArgumentException>(() =>
-            Lease.CreateDraft(_orgId, _unitId, _startDate, _startDate, DefaultTerms, _utcNow));
+            Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _startDate, DefaultTerms, _utcNow));
     }
 
     [Fact]
     public void AddResident_InDraftState_AddsSuccessfully()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         var residentId = Guid.NewGuid();
 
         // Act
@@ -67,7 +69,7 @@ public class LeaseAggregateTests
     public void AddResident_DuplicateResident_ThrowsInvalidOperationException()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         var residentId = Guid.NewGuid();
         lease.AddResident(residentId, LeaseResidentRole.PrimaryTenant, _utcNow);
 
@@ -80,7 +82,7 @@ public class LeaseAggregateTests
     public void AddResident_MultiplePrimaryTenants_ThrowsInvalidOperationException()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         lease.AddResident(Guid.NewGuid(), LeaseResidentRole.PrimaryTenant, _utcNow);
 
         // Act & Assert
@@ -92,7 +94,7 @@ public class LeaseAggregateTests
     public void SubmitForApproval_WithoutPrimaryTenant_ThrowsInvalidOperationException()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         lease.AddResident(Guid.NewGuid(), LeaseResidentRole.Occupant, _utcNow);
 
         // Act & Assert
@@ -103,7 +105,7 @@ public class LeaseAggregateTests
     public void FullLifecycle_Draft_PendingApproval_Active_Terminated()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         lease.AddResident(Guid.NewGuid(), LeaseResidentRole.PrimaryTenant, _utcNow);
 
         // 1. Submit
@@ -146,7 +148,7 @@ public class LeaseAggregateTests
     public void OverlapsWith_WhenLeaseIsTerminated_UsesActualTerminationDate()
     {
         // Arrange: Lease originally scheduled Jan 1 -> Dec 31, but terminated on June 30
-        var lease = Lease.CreateDraft(_orgId, _unitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), DefaultTerms, _utcNow);
         lease.AddResident(Guid.NewGuid(), LeaseResidentRole.PrimaryTenant, _utcNow);
         lease.SubmitForApproval(_utcNow);
         lease.Approve(_utcNow);
@@ -167,7 +169,7 @@ public class LeaseAggregateTests
     public void CreateRenewal_FromActiveLease_CopiesResidentsAndSetsConsecutiveDates()
     {
         // Arrange
-        var lease = Lease.CreateDraft(_orgId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
+        var lease = Lease.CreateDraft(_orgId, _propertyId, _unitId, _startDate, _endDate, DefaultTerms, _utcNow);
         var primaryId = Guid.NewGuid();
         lease.AddResident(primaryId, LeaseResidentRole.PrimaryTenant, _utcNow);
         lease.SubmitForApproval(_utcNow);

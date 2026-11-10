@@ -11,6 +11,7 @@ public sealed class Lease : IOrganizationScoped
 
     public Guid Id { get; private set; }
     public Guid OrganizationId { get; private set; }
+    public Guid PropertyId { get; private set; }
     public Guid UnitId { get; private set; }
     public DateOnly StartDate { get; private set; }
     public DateOnly EndDate { get; private set; }
@@ -44,6 +45,7 @@ public sealed class Lease : IOrganizationScoped
 
     public static Lease CreateDraft(
         Guid organizationId,
+        Guid propertyId,
         Guid unitId,
         DateOnly startDate,
         DateOnly endDate,
@@ -52,6 +54,7 @@ public sealed class Lease : IOrganizationScoped
         Guid? parentLeaseId = null)
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("Organization ID cannot be empty.", nameof(organizationId));
+        if (propertyId == Guid.Empty) throw new ArgumentException("Property ID cannot be empty.", nameof(propertyId));
         if (unitId == Guid.Empty) throw new ArgumentException("Unit ID cannot be empty.", nameof(unitId));
         ArgumentNullException.ThrowIfNull(terms, nameof(terms));
 
@@ -61,6 +64,7 @@ public sealed class Lease : IOrganizationScoped
         {
             Id = Guid.NewGuid(),
             OrganizationId = organizationId,
+            PropertyId = propertyId,
             UnitId = unitId,
             StartDate = dateRange.StartDate,
             EndDate = dateRange.EndDate,
@@ -223,6 +227,7 @@ public sealed class Lease : IOrganizationScoped
         var renewalTerms = newTerms ?? FinancialTerms;
         var newLease = CreateDraft(
             organizationId: OrganizationId,
+            propertyId: PropertyId,
             unitId: UnitId,
             startDate: newStartDate,
             endDate: newEndDate,
