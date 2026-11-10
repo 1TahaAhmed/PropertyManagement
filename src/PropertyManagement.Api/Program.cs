@@ -24,7 +24,6 @@ builder.Services.AddApi();
 var app = builder.Build();
 
 app.UseMiddleware<RequestLoggingMiddleware>();
-app.UseMiddleware<AuthHeaderForwardingMiddleware>();
 
 app.UseExceptionHandler();
 

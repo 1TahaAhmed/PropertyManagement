@@ -29,8 +29,6 @@ public static class SwaggerExtensions
                     new List<string>()
                 }
             });
-
-            options.OperationFilter<AddAuthHeaderParameterOperationFilter>();
         });
 
         return services;
