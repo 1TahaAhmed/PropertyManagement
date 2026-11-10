@@ -260,6 +260,116 @@ namespace PropertyManagement.Infrastructure.Migrations
                     b.ToTable("RefreshTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.Lease", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("DueDayOfMonth")
+                        .HasColumnType("int");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Frequency")
+                        .HasColumnType("int");
+
+                    b.Property<int>("GracePeriodDays")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("LateFeePercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("ParentLeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PropertyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("RentAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal>("SecurityDeposit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentLeaseId");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("UnitId");
+
+                    b.HasIndex("OrganizationId", "PropertyId", "Status");
+
+                    b.HasIndex("OrganizationId", "UnitId", "Status");
+
+                    b.HasIndex("OrganizationId", "UnitId", "StartDate", "EndDate");
+
+                    b.ToTable("Leases", (string)null);
+                });
+
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.LeaseResident", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AddedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("LeaseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ResidentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ResidentId");
+
+                    b.HasIndex("LeaseId", "ResidentId")
+                        .IsUnique();
+
+                    b.HasIndex("OrganizationId", "ResidentId");
+
+                    b.ToTable("LeaseResidents", (string)null);
+                });
+
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Organizations.Invitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -814,6 +924,79 @@ namespace PropertyManagement.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.Lease", b =>
+                {
+                    b.HasOne("PropertyManagement.Domain.Entities.Leases.Lease", null)
+                        .WithMany()
+                        .HasForeignKey("ParentLeaseId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("PropertyManagement.Domain.Entities.Properties.Property", null)
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PropertyManagement.Domain.Entities.Properties.Unit", null)
+                        .WithMany()
+                        .HasForeignKey("UnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsOne("PropertyManagement.Domain.Entities.Leases.LeaseTerminationDetails", "TerminationDetails", b1 =>
+                        {
+                            b1.Property<Guid>("LeaseId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("Notes")
+                                .HasMaxLength(2000)
+                                .HasColumnType("nvarchar(2000)")
+                                .HasColumnName("TerminationNotes");
+
+                            b1.Property<string>("Reason")
+                                .IsRequired()
+                                .HasMaxLength(500)
+                                .HasColumnType("nvarchar(500)")
+                                .HasColumnName("TerminationReason");
+
+                            b1.Property<DateTime>("TerminatedAtUtc")
+                                .HasColumnType("datetime2")
+                                .HasColumnName("TerminatedAtUtc");
+
+                            b1.Property<Guid>("TerminatedByUserId")
+                                .HasColumnType("uniqueidentifier")
+                                .HasColumnName("TerminatedByUserId");
+
+                            b1.Property<DateOnly>("TerminationDate")
+                                .HasColumnType("date")
+                                .HasColumnName("TerminationDate");
+
+                            b1.HasKey("LeaseId");
+
+                            b1.ToTable("Leases");
+
+                            b1.WithOwner()
+                                .HasForeignKey("LeaseId");
+                        });
+
+                    b.Navigation("TerminationDetails");
+                });
+
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.LeaseResident", b =>
+                {
+                    b.HasOne("PropertyManagement.Domain.Entities.Leases.Lease", null)
+                        .WithMany("Residents")
+                        .HasForeignKey("LeaseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PropertyManagement.Domain.Entities.Residents.Resident", null)
+                        .WithMany()
+                        .HasForeignKey("ResidentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Organizations.Invitation", b =>
                 {
                     b.HasOne("PropertyManagement.Domain.Entities.Organizations.Organization", null)
@@ -889,6 +1072,11 @@ namespace PropertyManagement.Infrastructure.Migrations
                         .HasForeignKey("OrganizationId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.Lease", b =>
+                {
+                    b.Navigation("Residents");
                 });
 
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Properties.Property", b =>

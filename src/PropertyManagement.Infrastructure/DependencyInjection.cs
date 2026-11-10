@@ -1,3 +1,5 @@
+using PropertyManagement.Application.Abstractions.Repositories;
+using PropertyManagement.Domain.Entities.Leases;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Application.Abstractions.Residents;
@@ -229,6 +231,7 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IResidentRepository, ResidentRepository>();
             services.AddScoped<IUnitRepository, UnitRepository>();
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+            services.AddScoped<ILeaseRepository, LeaseRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
             return services;

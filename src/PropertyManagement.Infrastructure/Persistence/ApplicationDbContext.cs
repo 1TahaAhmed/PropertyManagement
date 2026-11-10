@@ -1,3 +1,4 @@
+using PropertyManagement.Domain.Entities.Leases;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -62,6 +63,16 @@ namespace PropertyManagement.Infrastructure.Persistence
                 e.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                     ? _currentUser.OrganizationId.Value
                     : Guid.Empty));
+
+            builder.Entity<Lease>().HasQueryFilter(l =>
+                l.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
+
+            builder.Entity<LeaseResident>().HasQueryFilter(lr =>
+                lr.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                    ? _currentUser.OrganizationId.Value
+                    : Guid.Empty));
         }
 
         public DbSet<EmailConfirmationChallenge>
@@ -81,6 +92,8 @@ namespace PropertyManagement.Infrastructure.Persistence
         public DbSet<OrganizationMember> OrganizationMembers => Set<OrganizationMember>();
         public DbSet<Invitation> Invitations => Set<Invitation>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+        public DbSet<Lease> Leases => Set<Lease>();
+        public DbSet<LeaseResident> LeaseResidents => Set<LeaseResident>();
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
