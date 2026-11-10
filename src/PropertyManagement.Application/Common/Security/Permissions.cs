@@ -1,6 +1,6 @@
 namespace PropertyManagement.Application.Common.Security;
 
-public static class Permissions
+public static partial class Permissions
 {
     public static class Properties
     {
@@ -34,5 +34,17 @@ public static class Permissions
         public const string Update = "Permissions.Residents.Update";
         public const string Archive = "Permissions.Residents.Archive";
         public const string ManageContacts = "Permissions.Residents.ManageContacts";
+    }
+
+    public static class Leases
+    {
+        public const string Read = "Permissions.Leases.Read";
+        public const string Create = "Permissions.Leases.Create";
+        public const string Update = "Permissions.Leases.Update";
+        public const string Submit = "Permissions.Leases.Submit";
+        public const string Approve = "Permissions.Leases.Approve";
+        public const string Terminate = "Permissions.Leases.Terminate";
+        public const string Cancel = "Permissions.Leases.Cancel";
+        public const string Renew = "Permissions.Leases.Renew";
     }
 }

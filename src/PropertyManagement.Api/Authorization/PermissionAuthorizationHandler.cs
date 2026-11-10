@@ -86,7 +86,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Properties.Read,
                 Permissions.Units.Read,
                 Permissions.Tenants.Read,
-                Permissions.Residents.Read
+                Permissions.Residents.Read,
+                Permissions.Leases.Read
             ],
             _ => []
         };
