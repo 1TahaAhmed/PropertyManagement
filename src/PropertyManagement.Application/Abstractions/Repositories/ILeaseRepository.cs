@@ -20,6 +20,15 @@ public interface ILeaseRepository
         Guid organizationId,
         CancellationToken cancellationToken = default);
 
+    Task<(IReadOnlyList<Lease> Items, int TotalCount)> GetPagedAsync(
+        Guid organizationId,
+        Guid? propertyId,
+        Guid? unitId,
+        LeaseStatus? status,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
     Task<Lease?> GetActiveLeaseForUnitAsync(
         Guid unitId,
         Guid organizationId,

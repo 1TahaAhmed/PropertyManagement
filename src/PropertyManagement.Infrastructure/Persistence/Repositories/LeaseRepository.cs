@@ -54,6 +54,45 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<(IReadOnlyList<Lease> Items, int TotalCount)> GetPagedAsync(
+        Guid organizationId,
+        Guid? propertyId,
+        Guid? unitId,
+        LeaseStatus? status,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = context.Leases
+            .Include(l => l.Residents)
+            .Where(l => l.OrganizationId == organizationId);
+
+        if (propertyId.HasValue)
+        {
+            query = query.Where(l => l.PropertyId == propertyId.Value);
+        }
+
+        if (unitId.HasValue)
+        {
+            query = query.Where(l => l.UnitId == unitId.Value);
+        }
+
+        if (status.HasValue)
+        {
+            query = query.Where(l => l.Status == status.Value);
+        }
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var items = await query
+            .OrderByDescending(l => l.CreatedAtUtc)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
+
     public async Task<Lease?> GetActiveLeaseForUnitAsync(
         Guid unitId,
         Guid organizationId,
