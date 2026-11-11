@@ -92,7 +92,7 @@ public sealed class LeasesController(
 
         var query = new GetLeaseByIdQuery(CurrentOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
-
+        
         if (result.IsFailure)
         {
             return this.ToActionResult(result);

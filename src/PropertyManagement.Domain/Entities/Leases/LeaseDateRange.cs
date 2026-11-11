@@ -16,12 +16,6 @@ public readonly record struct LeaseDateRange
         EndDate = endDate;
     }
 
-    /// <summary>
-    /// Checks if this date range overlaps with another date range.
-    /// Boundaries are inclusive: A [Jan 1, Jun 30] and B [Jul 1, Dec 31] do NOT overlap.
-    /// A [Jan 1, Jul 1] and B [Jul 1, Dec 31] DO overlap on Jul 1.
-    /// Overlap condition: max(StartA, StartB) <= min(EndA, EndB)
-    /// </summary>
     public bool OverlapsWith(LeaseDateRange other)
     {
         var maxStart = StartDate > other.StartDate ? StartDate : other.StartDate;
@@ -30,9 +24,6 @@ public readonly record struct LeaseDateRange
         return maxStart <= minEnd;
     }
 
-    /// <summary>
-    /// Checks if a specific date falls within the inclusive range [StartDate, EndDate].
-    /// </summary>
     public bool Contains(DateOnly date)
     {
         return date >= StartDate && date <= EndDate;

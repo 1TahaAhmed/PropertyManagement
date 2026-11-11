@@ -154,7 +154,6 @@ public sealed class Lease : IOrganizationScoped
     {
         EnsureInState(LeaseStatus.PendingApproval, "approve");
 
-        // After approval, lease is ready for execution or instant activation if startDate <= today
         Status = LeaseStatus.Active;
         UpdatedAtUtc = utcNow;
     }
@@ -235,7 +234,6 @@ public sealed class Lease : IOrganizationScoped
             utcNow: utcNow,
             parentLeaseId: Id);
 
-        // Copy residents to the renewed lease
         foreach (var resident in _residents)
         {
             newLease.AddResident(resident.ResidentId, resident.Role, utcNow);
@@ -244,11 +242,6 @@ public sealed class Lease : IOrganizationScoped
         return newLease;
     }
 
-    /// <summary>
-    /// Checks if this lease can conflict/overlap with another lease for the same unit.
-    /// Cancelled and Expired leases before start do not conflict.
-    /// Terminated leases only occupy up to their TerminationDate.
-    /// </summary>
     public bool OverlapsWith(DateOnly candidateStart, DateOnly candidateEnd)
     {
         if (Status == LeaseStatus.Cancelled)
