@@ -61,7 +61,15 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Residents.Create,
                 Permissions.Residents.Update,
                 Permissions.Residents.Archive,
-                Permissions.Residents.ManageContacts
+                Permissions.Residents.ManageContacts,
+                Permissions.Leases.Read,
+                Permissions.Leases.Create,
+                Permissions.Leases.Update,
+                Permissions.Leases.Submit,
+                Permissions.Leases.Approve,
+                Permissions.Leases.Terminate,
+                Permissions.Leases.Cancel,
+                Permissions.Leases.Renew
             ],
             MembershipRole.PropertyManager =>
             [
@@ -79,7 +87,15 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Residents.Read,
                 Permissions.Residents.Create,
                 Permissions.Residents.Update,
-                Permissions.Residents.ManageContacts
+                Permissions.Residents.ManageContacts,
+                Permissions.Leases.Read,
+                Permissions.Leases.Create,
+                Permissions.Leases.Update,
+                Permissions.Leases.Submit,
+                Permissions.Leases.Approve,
+                Permissions.Leases.Terminate,
+                Permissions.Leases.Cancel,
+                Permissions.Leases.Renew
             ],
             MembershipRole.Staff =>
             [
