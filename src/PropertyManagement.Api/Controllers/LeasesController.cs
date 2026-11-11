@@ -1,3 +1,6 @@
+using PropertyManagement.Application.Features.Leases.Cancel;
+using PropertyManagement.Application.Features.Leases.GetPaged;
+using PropertyManagement.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -92,6 +95,72 @@ public sealed class LeasesController(
 
         var query = new GetLeaseByIdQuery(CurrentOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet]
+    [HasPermission(Permissions.Leases.Read)]
+    [ProducesResponseType(typeof(PagedLeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetPaged(
+        [FromQuery] Guid? propertyId,
+        [FromQuery] Guid? unitId,
+        [FromQuery] LeaseStatus? status,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var query = new GetLeasesPagedQuery(CurrentOrgId.Value, propertyId, unitId, status, pageNumber, pageSize);
+        var result = await sender.Send(query, cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpPost("{id:guid}/cancel")]
+    [HasPermission(Permissions.Leases.Cancel)]
+    [ProducesResponseType(typeof(LeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Cancel(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var command = new CancelLeaseCommand(CurrentOrgId.Value, id);
+        var result = await sender.Send(command, cancellationToken);
 
         if (result.IsFailure)
         {
