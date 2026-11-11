@@ -1,0 +1,127 @@
+using MediatR;
+using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Properties;
+using PropertyManagement.Application.Abstractions.Repositories;
+using PropertyManagement.Application.Abstractions.Residents;
+using PropertyManagement.Application.Common.Enums;
+using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Leases.Responses;
+using PropertyManagement.Domain.Entities.Leases;
+using PropertyManagement.Domain.Enums;
+
+namespace PropertyManagement.Application.Features.Leases.CreateDraft;
+
+public sealed class CreateDraftLeaseCommandHandler(
+    IPropertyRepository propertyRepository,
+    IUnitRepository unitRepository,
+    IResidentRepository residentRepository,
+    ILeaseRepository leaseRepository,
+    IUnitOfWork unitOfWork,
+    IClock clock) : IRequestHandler<CreateDraftLeaseCommand, Result<LeaseResponse>>
+{
+    public async Task<Result<LeaseResponse>> Handle(CreateDraftLeaseCommand request, CancellationToken cancellationToken)
+    {
+        // 1. Verify Property belongs to Organization
+        var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.OrganizationId, cancellationToken);
+        if (property is null || property.OrganizationId != request.OrganizationId)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Property.NotFound",
+                Message: "The specified property does not exist in your organization.",
+                Type: ErrorType.NotFound));
+        }
+
+        if (property.Status == PropertyStatus.Archived)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Property.Archived",
+                Message: "Cannot create leases for an archived property.",
+                Type: ErrorType.Validation));
+        }
+
+        // 2. Verify Unit belongs to Organization and Property
+        var unit = await unitRepository.GetByIdAsync(request.UnitId, request.OrganizationId, cancellationToken);
+        if (unit is null || unit.OrganizationId != request.OrganizationId || unit.PropertyId != request.PropertyId)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Unit.NotFound",
+                Message: "The specified unit does not exist in the selected property.",
+                Type: ErrorType.NotFound));
+        }
+
+        if (unit.Status != UnitOperationalStatus.Active)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Unit.NotActive",
+                Message: $"Cannot create a lease on a unit with status '{unit.Status}'. Unit must be Active.",
+                Type: ErrorType.Validation));
+        }
+
+        // 3. Verify No Overlapping Lease for this Unit
+        var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
+            request.UnitId,
+            request.OrganizationId,
+            request.StartDate,
+            request.EndDate,
+            cancellationToken: cancellationToken);
+
+        if (hasOverlap)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Lease.OverlapConflict",
+                Message: "A lease already exists that overlaps with the requested date range for this unit.",
+                Type: ErrorType.Conflict));
+        }
+
+        // 4. Verify Resident if provided
+        if (request.PrimaryResidentId.HasValue && request.PrimaryResidentId.Value != Guid.Empty)
+        {
+            var resident = await residentRepository.GetByIdAsync(request.PrimaryResidentId.Value, request.OrganizationId, cancellationToken);
+            if (resident is null || resident.OrganizationId != request.OrganizationId)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Resident.NotFound",
+                    Message: "The specified primary resident does not exist in your organization.",
+                    Type: ErrorType.NotFound));
+            }
+
+            if (resident.Status != ResidentStatus.Active)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Resident.NotActive",
+                    Message: "The primary resident must be in Active status to be added to a lease.",
+                    Type: ErrorType.Validation));
+            }
+        }
+
+        // 5. Construct Lease Aggregate
+        var terms = new LeaseFinancialTerms(
+            request.RentAmount,
+            request.SecurityDeposit,
+            request.Frequency,
+            request.DueDayOfMonth,
+            request.GracePeriodDays,
+            request.LateFeePercentage);
+
+        var utcNow = clock.UtcNow;
+
+        var lease = Lease.CreateDraft(
+            organizationId: request.OrganizationId,
+            propertyId: request.PropertyId,
+            unitId: request.UnitId,
+            startDate: request.StartDate,
+            endDate: request.EndDate,
+            terms: terms,
+            utcNow: utcNow);
+
+        if (request.PrimaryResidentId.HasValue && request.PrimaryResidentId.Value != Guid.Empty)
+        {
+            lease.AddResident(request.PrimaryResidentId.Value, LeaseResidentRole.PrimaryTenant, utcNow);
+        }
+
+        await leaseRepository.AddAsync(lease, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));
+    }
+}
