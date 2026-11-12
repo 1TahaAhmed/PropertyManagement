@@ -22,10 +22,6 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
         Guid? excludingLeaseId = null,
         CancellationToken cancellationToken = default)
     {
-        // Cancelled leases are excluded from overlap checks.
-        // Active and PendingApproval leases block overlapping bookings.
-        // Overlap formula: max(StartA, StartB) <= min(EndA, EndB)
-        // Which is equivalent to: StartA <= EndB && EndA >= StartB
         var query = context.Leases
             .Where(l => l.UnitId == unitId
                      && l.OrganizationId == organizationId
@@ -38,7 +34,6 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
 
         var leases = await query.ToListAsync(cancellationToken);
 
-        // Perform precise domain overlap check (accounting for Terminated actual dates)
         return leases.Any(l => l.OverlapsWith(startDate, endDate));
     }
 

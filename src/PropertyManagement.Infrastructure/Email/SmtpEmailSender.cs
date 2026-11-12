@@ -28,7 +28,6 @@ public sealed class SmtpEmailSender(
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        // If in Development and SMTP is explicitly unconfigured or placeholder, use dev logging fallback
         if (environment.IsDevelopment() &&
             (string.IsNullOrWhiteSpace(_options.Host) ||
              _options.Host.Equals("smtp.example.com", StringComparison.OrdinalIgnoreCase) ||
@@ -68,13 +67,11 @@ public sealed class SmtpEmailSender(
         {
             logger.LogError(ex, "Failed to send email to {Recipient}", recipient);
 
-            // In production/staging, rethrow so the error is never silently swallowed
             if (!environment.IsDevelopment())
             {
                 throw;
             }
 
-            // In development, log the failure cleanly without breaking the flow
             logger.LogWarning("Email delivery failed in development environment for {Recipient}", recipient);
         }
     }

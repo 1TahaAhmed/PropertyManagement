@@ -9,7 +9,6 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        // Design-time connection string for generating migrations
         optionsBuilder.UseSqlServer(
             "Server=(localdb)\\mssqllocaldb;Database=PropertyManagementDb_DesignTime;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True");
 

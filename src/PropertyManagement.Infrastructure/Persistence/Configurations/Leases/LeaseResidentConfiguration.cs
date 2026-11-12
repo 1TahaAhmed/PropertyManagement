@@ -29,13 +29,11 @@ public sealed class LeaseResidentConfiguration : IEntityTypeConfiguration<LeaseR
         builder.Property(lr => lr.AddedAtUtc)
             .IsRequired();
 
-        // Foreign Key to Resident
         builder.HasOne<Resident>()
             .WithMany()
             .HasForeignKey(lr => lr.ResidentId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Unique index: a resident can only be added once per lease
         builder.HasIndex(lr => new { lr.LeaseId, lr.ResidentId })
             .IsUnique();
 

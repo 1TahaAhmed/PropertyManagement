@@ -1,5 +1,4 @@
 using PropertyManagement.Application.Abstractions.Repositories;
-using PropertyManagement.Domain.Entities.Leases;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Application.Abstractions.Residents;
@@ -65,7 +64,6 @@ namespace PropertyManagement.Infrastructure
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUser, CurrentUser>();
 
-            // JWT Options & Authentication
             services.AddOptions<JwtOptions>()
                 .Bind(configuration.GetSection(JwtOptions.SectionName))
                 .Validate(
@@ -147,7 +145,6 @@ namespace PropertyManagement.Infrastructure
                 };
             });
 
-            // SMTP Options
             services.AddOptions<SmtpOptions>()
                 .Bind(configuration.GetSection(SmtpOptions.SectionName))
                 .Validate(options =>
@@ -166,7 +163,6 @@ namespace PropertyManagement.Infrastructure
 
             services.AddScoped<IEmailSender, SmtpEmailSender>();
 
-            // Email Confirmation Options
             services.AddOptions<EmailConfirmationOptions>()
                 .Bind(configuration.GetSection(
                     EmailConfirmationOptions.SectionName))

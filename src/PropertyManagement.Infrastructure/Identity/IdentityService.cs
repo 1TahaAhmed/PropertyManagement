@@ -119,7 +119,6 @@ public sealed class IdentityService(
                     Type: ErrorType.Unauthorized));
         }
 
-        // Only after credentials are authenticated do we check email confirmation
         if (!user.EmailConfirmed)
         {
             return Result<AuthUserResult>.Failure(

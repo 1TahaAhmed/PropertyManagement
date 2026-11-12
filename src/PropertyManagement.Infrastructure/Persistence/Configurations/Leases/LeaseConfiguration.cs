@@ -62,7 +62,6 @@ public sealed class LeaseConfiguration : IEntityTypeConfiguration<Lease>
         builder.Property(l => l.RowVersion)
             .IsRowVersion();
 
-        // Complex property / Owned type for Termination Details
         builder.OwnsOne(l => l.TerminationDetails, term =>
         {
             term.Property(t => t.TerminationDate)
@@ -83,7 +82,6 @@ public sealed class LeaseConfiguration : IEntityTypeConfiguration<Lease>
                 .HasColumnName("TerminatedAtUtc");
         });
 
-        // Foreign keys to Property and Unit with DeleteBehavior.Restrict
         builder.HasOne<Property>()
             .WithMany()
             .HasForeignKey(l => l.PropertyId)
@@ -94,19 +92,16 @@ public sealed class LeaseConfiguration : IEntityTypeConfiguration<Lease>
             .HasForeignKey(l => l.UnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Self-referencing FK for Renewals (ParentLeaseId)
         builder.HasOne<Lease>()
             .WithMany()
             .HasForeignKey(l => l.ParentLeaseId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Navigation to Residents
         builder.HasMany(l => l.Residents)
             .WithOne()
             .HasForeignKey(lr => lr.LeaseId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Performance & Query Indexes
         builder.HasIndex(l => new { l.OrganizationId, l.PropertyId, l.Status });
         builder.HasIndex(l => new { l.OrganizationId, l.UnitId, l.Status });
         builder.HasIndex(l => new { l.OrganizationId, l.UnitId, l.StartDate, l.EndDate });

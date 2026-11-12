@@ -73,9 +73,11 @@ public sealed partial class EmergencyContact : IOrganizationScoped
         string? email = null,
         string? notes = null)
     {
+
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
         ArgumentException.ThrowIfNullOrWhiteSpace(relationship, nameof(relationship));
         ArgumentException.ThrowIfNullOrWhiteSpace(phone, nameof(phone));
+
 
         string? normalizedEmail = null;
         if (!string.IsNullOrWhiteSpace(email))
@@ -85,6 +87,7 @@ public sealed partial class EmergencyContact : IOrganizationScoped
                 throw new ArgumentException("Invalid email format.", nameof(email));
             normalizedEmail = trimmedEmail;
         }
+
 
         Name = name.Trim();
         Relationship = relationship.Trim();
