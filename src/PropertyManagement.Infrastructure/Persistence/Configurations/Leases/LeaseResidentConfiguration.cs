@@ -13,6 +13,9 @@ public sealed class LeaseResidentConfiguration : IEntityTypeConfiguration<LeaseR
 
         builder.HasKey(lr => lr.Id);
 
+        builder.Property(lr => lr.Id)
+            .ValueGeneratedNever();
+
         builder.Property(lr => lr.OrganizationId)
             .IsRequired();
 

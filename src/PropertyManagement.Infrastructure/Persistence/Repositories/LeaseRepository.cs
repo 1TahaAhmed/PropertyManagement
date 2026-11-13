@@ -107,6 +107,9 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
 
     public void Update(Lease lease)
     {
-        context.Leases.Update(lease);
+        if (context.Entry(lease).State == EntityState.Detached)
+        {
+            context.Leases.Update(lease);
+        }
     }
 }

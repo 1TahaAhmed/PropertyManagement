@@ -263,7 +263,6 @@ namespace PropertyManagement.Infrastructure.Migrations
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.Lease", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("CreatedAtUtc")
@@ -340,7 +339,6 @@ namespace PropertyManagement.Infrastructure.Migrations
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.LeaseResident", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("AddedAtUtc")
