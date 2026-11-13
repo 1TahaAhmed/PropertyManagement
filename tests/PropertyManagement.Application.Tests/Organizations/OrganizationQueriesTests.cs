@@ -1,9 +1,14 @@
 using NSubstitute;
+using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
-using PropertyManagement.Application.Features.Organizations.GetInvitations;
+using PropertyManagement.Application.Common.Enums;
+using PropertyManagement.Application.Features.Organizations.Create;
+using PropertyManagement.Application.Features.Organizations.GetById;
 using PropertyManagement.Application.Features.Organizations.GetMembers;
 using PropertyManagement.Application.Features.Organizations.GetMyOrganizations;
+using PropertyManagement.Application.Features.Organizations.Members;
+using PropertyManagement.Application.Features.Organizations.Update;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Enums;
 using Xunit;
@@ -15,6 +20,79 @@ public class OrganizationQueriesTests
     private static readonly DateTime FixedNow = new(2026, 11, 13, 12, 0, 0, DateTimeKind.Utc);
     private readonly IOrganizationRepository _organizationRepository = Substitute.For<IOrganizationRepository>();
     private readonly IIdentityService _identityService = Substitute.For<IIdentityService>();
+    private readonly IClock _clock = Substitute.For<IClock>();
+
+    public OrganizationQueriesTests()
+    {
+        _clock.UtcNow.Returns(FixedNow);
+    }
+
+    [Fact]
+    public async Task CreateOrganization_ShouldCreateOrgAndOwnerMembership()
+    {
+        var userId = Guid.NewGuid();
+        _organizationRepository.ExistsByNameAsync("Delta Group", Arg.Any<CancellationToken>()).Returns(false);
+        _organizationRepository.ExistsByIdentifierAsync("delta-group", Arg.Any<CancellationToken>()).Returns(false);
+
+        var handler = new CreateOrganizationCommandHandler(_organizationRepository, _clock);
+        var result = await handler.Handle(new CreateOrganizationCommand(userId, "Delta Group"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Delta Group", result.Value.Name);
+        Assert.Equal("delta-group", result.Value.Identifier);
+        await _organizationRepository.Received(1).AddAsync(Arg.Any<Organization>(), Arg.Any<CancellationToken>());
+        await _organizationRepository.Received(1).AddMemberAsync(
+            Arg.Is<OrganizationMember>(m => m.UserId == userId && m.Role == MembershipRole.Owner),
+            Arg.Any<CancellationToken>());
+        await _organizationRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetOrganizationById_ShouldReturnForbidden_WhenUserIsNotActiveMember()
+    {
+        var org = Organization.Create("Delta Group", FixedNow);
+        var userId = Guid.NewGuid();
+
+        _organizationRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
+        _organizationRepository.GetMemberAsync(org.Id, userId, Arg.Any<CancellationToken>()).Returns((OrganizationMember?)null);
+
+        var handler = new GetOrganizationByIdQueryHandler(_organizationRepository);
+        var result = await handler.Handle(new GetOrganizationByIdQuery(org.Id, userId), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.Forbidden, result.Errors.First().Type);
+    }
+
+    [Fact]
+    public async Task UpdateOrganization_ShouldUpdateName_WhenUnique()
+    {
+        var org = Organization.Create("Old Name", FixedNow.AddDays(-1));
+        _organizationRepository.GetByIdAsync(org.Id, Arg.Any<CancellationToken>()).Returns(org);
+        _organizationRepository.ExistsByNameAsync("New Name", Arg.Any<CancellationToken>()).Returns(false);
+
+        var handler = new UpdateOrganizationCommandHandler(_organizationRepository, _clock);
+        var result = await handler.Handle(new UpdateOrganizationCommand(org.Id, "New Name"), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("New Name", result.Value.Name);
+        await _organizationRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeactivateMember_ShouldFail_WhenMemberIsLastActiveOwner()
+    {
+        var orgId = Guid.NewGuid();
+        var member = OrganizationMember.Create(orgId, Guid.NewGuid(), MembershipRole.Owner, FixedNow);
+
+        _organizationRepository.GetMemberByIdAsync(member.Id, orgId, Arg.Any<CancellationToken>()).Returns(member);
+        _organizationRepository.CountActiveOwnersAsync(orgId, Arg.Any<CancellationToken>()).Returns(1);
+
+        var handler = new DeactivateMemberCommandHandler(_organizationRepository, _clock);
+        var result = await handler.Handle(new DeactivateMemberCommand(orgId, member.Id), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Organization.LastOwnerProtected", result.Errors.First().Code);
+    }
 
     [Fact]
     public async Task GetMyOrganizations_ShouldMarkCurrentOrganization()
@@ -58,23 +136,5 @@ public class OrganizationQueriesTests
         Assert.Equal("Sara", item.FirstName);
         Assert.Equal("Ali", item.LastName);
         Assert.Equal(MembershipRole.PropertyManager, item.Role);
-    }
-
-    [Fact]
-    public async Task GetInvitations_ShouldReturnMappedInvitations()
-    {
-        var orgId = Guid.NewGuid();
-        var invite = Invitation.Create(orgId, "staff@example.com", MembershipRole.Staff, "hash", FixedNow.AddDays(7), FixedNow);
-
-        _organizationRepository.GetInvitationsByOrganizationAsync(orgId, InvitationStatus.Pending, Arg.Any<CancellationToken>())
-            .Returns([invite]);
-
-        var handler = new GetOrganizationInvitationsQueryHandler(_organizationRepository);
-        var result = await handler.Handle(new GetOrganizationInvitationsQuery(orgId, InvitationStatus.Pending), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        var item = Assert.Single(result.Value);
-        Assert.Equal("staff@example.com", item.Email);
-        Assert.Equal(InvitationStatus.Pending, item.Status);
     }
 }

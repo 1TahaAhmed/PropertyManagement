@@ -50,6 +50,15 @@ public sealed class OrganizationRepository(ApplicationDbContext context) : IOrga
             .FirstOrDefaultAsync(m => m.OrganizationId == organizationId && m.UserId == userId, cancellationToken);
     }
 
+    public async Task<OrganizationMember?> GetMemberByIdAsync(
+        Guid memberId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.OrganizationMembers
+            .FirstOrDefaultAsync(m => m.Id == memberId && m.OrganizationId == organizationId, cancellationToken);
+    }
+
     public async Task<IReadOnlyList<OrganizationMember>> GetMembersAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await context.OrganizationMembers

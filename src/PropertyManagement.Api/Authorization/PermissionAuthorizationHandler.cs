@@ -72,8 +72,11 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Cancel,
                 Permissions.Leases.Renew,
                 Permissions.Organizations.Read,
-                Permissions.Organizations.InviteMembers,
-                Permissions.Organizations.ManageMembers
+                Permissions.Organizations.Update,
+                Permissions.Organizations.ManageMembers,
+                Permissions.Invitations.Read,
+                Permissions.Invitations.Create,
+                Permissions.Invitations.Revoke
             ],
             MembershipRole.PropertyManager =>
             [
@@ -100,7 +103,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Terminate,
                 Permissions.Leases.Cancel,
                 Permissions.Leases.Renew,
-                Permissions.Organizations.Read
+                Permissions.Organizations.Read,
+                Permissions.Invitations.Read
             ],
             MembershipRole.Staff =>
             [
