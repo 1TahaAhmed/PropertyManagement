@@ -30,6 +30,7 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         }
 
         var permissions = GetPermissionsForRole(role);
+
         if (permissions.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
@@ -69,7 +70,10 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Approve,
                 Permissions.Leases.Terminate,
                 Permissions.Leases.Cancel,
-                Permissions.Leases.Renew
+                Permissions.Leases.Renew,
+                Permissions.Organizations.Read,
+                Permissions.Organizations.InviteMembers,
+                Permissions.Organizations.ManageMembers
             ],
             MembershipRole.PropertyManager =>
             [
@@ -95,7 +99,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Approve,
                 Permissions.Leases.Terminate,
                 Permissions.Leases.Cancel,
-                Permissions.Leases.Renew
+                Permissions.Leases.Renew,
+                Permissions.Organizations.Read
             ],
             MembershipRole.Staff =>
             [
@@ -103,7 +108,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Units.Read,
                 Permissions.Tenants.Read,
                 Permissions.Residents.Read,
-                Permissions.Leases.Read
+                Permissions.Leases.Read,
+                Permissions.Organizations.Read
             ],
             _ => []
         };

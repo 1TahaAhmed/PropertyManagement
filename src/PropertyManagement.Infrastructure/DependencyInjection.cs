@@ -2,6 +2,7 @@ using PropertyManagement.Application.Abstractions.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Application.Abstractions.Residents;
+using PropertyManagement.Application.Abstractions.Tenants;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -225,6 +226,7 @@ namespace PropertyManagement.Infrastructure
 
             services.AddScoped<IPropertyRepository, PropertyRepository>();
             services.AddScoped<IResidentRepository, ResidentRepository>();
+            services.AddScoped<ITenantRepository, TenantRepository>();
             services.AddScoped<IUnitRepository, UnitRepository>();
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<ILeaseRepository, LeaseRepository>();

@@ -34,7 +34,12 @@ public sealed class SmtpEmailSender(
              _options.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase)))
         {
             var match = Regex.Match(body, @"([0-9]{6})");
-            var codeNotice = match.Success ? $" [VERIFICATION CODE: {match.Value}]" : string.Empty;
+            var tokenMatch = Regex.Match(body, @"Invitation Token:\s*(\S+)");
+            var codeNotice = match.Success
+                ? $" [VERIFICATION CODE: {match.Value}]"
+                : tokenMatch.Success
+                    ? $" [INVITATION TOKEN: {tokenMatch.Groups[1].Value}]"
+                    : string.Empty;
 
             logger.LogInformation("📧 [DEV EMAIL MOCK] To: {Recipient} | Subject: {Subject}{CodeNotice}", recipient, subject, codeNotice);
             return;

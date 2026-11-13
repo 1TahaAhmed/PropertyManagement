@@ -162,6 +162,55 @@ public sealed class IdentityService(
                 LastName: user.LastName));
     }
 
+    public async Task<AuthUserResult?> FindUserByEmailAsync(
+        string email,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        var user = await userManager.FindByEmailAsync(email.Trim());
+        if (user is null)
+        {
+            return null;
+        }
+
+        return new AuthUserResult(
+            UserId: user.Id,
+            Email: user.Email!,
+            FirstName: user.FirstName,
+            LastName: user.LastName);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, AuthUserResult>> GetUsersByIdsAsync(
+        IEnumerable<Guid> userIds,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var ids = userIds.Where(id => id != Guid.Empty).Distinct().ToList();
+        if (ids.Count == 0)
+        {
+            return new Dictionary<Guid, AuthUserResult>();
+        }
+
+        var users = await userManager.Users
+            .AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .Select(u => new AuthUserResult(
+                u.Id,
+                u.Email ?? string.Empty,
+                u.FirstName,
+                u.LastName))
+            .ToListAsync(cancellationToken);
+
+        return users.ToDictionary(u => u.UserId);
+    }
+
     public async Task<Result<string>> GenerateEmailConfirmationTokenAsync(
         Guid userId,
         CancellationToken cancellationToken = default)

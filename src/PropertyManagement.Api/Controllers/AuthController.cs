@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Authentication;
 using PropertyManagement.Api.Contracts.Authentication.PasswordReset;
@@ -9,14 +10,16 @@ using PropertyManagement.Application.Features.Authentication.PasswordReset.Reset
 using PropertyManagement.Application.Features.Authentication.RefreshToken;
 using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Application.Features.Authentication.RegisterCompany;
+using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Application.Features.Authentication.RevokeToken;
+using PropertyManagement.Application.Features.Authentication.SwitchOrganization;
 using ApiRegisterResponse = PropertyManagement.Api.Contracts.Authentication.RegisterResponse;
 
 namespace PropertyManagement.Api.Controllers;
 
 [Route("api/v1/[controller]")]
 [ApiController]
-public sealed class AuthController(ISender sender) : ControllerBase
+public sealed class AuthController(ISender sender, ICurrentUser currentUser) : ControllerBase
 {
     [HttpPost("register")]
     [ProducesResponseType(
@@ -211,5 +214,39 @@ public sealed class AuthController(ISender sender) : ControllerBase
         }
 
         return StatusCode(StatusCodes.Status201Created, result.Value);
+    }
+
+    [Authorize]
+    [HttpPost("switch-organization")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SwitchOrganization(
+        [FromBody] SwitchOrganizationRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!currentUser.UserId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "Authenticated user context is required."
+            });
+        }
+
+        var command = new SwitchOrganizationCommand(
+            UserId: currentUser.UserId.Value,
+            TargetOrganizationId: request.OrganizationId,
+            CurrentRefreshToken: request.RefreshToken);
+
+        var result = await sender.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
     }
 }

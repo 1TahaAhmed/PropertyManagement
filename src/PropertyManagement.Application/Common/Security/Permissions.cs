@@ -47,4 +47,11 @@ public static partial class Permissions
         public const string Cancel = "Permissions.Leases.Cancel";
         public const string Renew = "Permissions.Leases.Renew";
     }
+
+    public static class Organizations
+    {
+        public const string Read = "Permissions.Organizations.Read";
+        public const string InviteMembers = "Permissions.Organizations.InviteMembers";
+        public const string ManageMembers = "Permissions.Organizations.ManageMembers";
+    }
 }
