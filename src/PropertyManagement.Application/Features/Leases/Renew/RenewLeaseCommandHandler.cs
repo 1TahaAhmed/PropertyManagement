@@ -45,7 +45,12 @@ public sealed class RenewLeaseCommandHandler(
         }
 
         LeaseFinancialTerms? newTerms = null;
-        if (request.NewRentAmount.HasValue || request.NewSecurityDeposit.HasValue)
+        if (request.NewRentAmount.HasValue
+            || request.NewSecurityDeposit.HasValue
+            || request.NewFrequency.HasValue
+            || request.NewDueDayOfMonth.HasValue
+            || request.NewGracePeriodDays.HasValue
+            || request.NewLateFeePercentage.HasValue)
         {
             newTerms = new LeaseFinancialTerms(
                 rentAmount: request.NewRentAmount ?? existingLease.RentAmount,

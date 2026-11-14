@@ -29,6 +29,9 @@ public sealed class CreateDraftLeaseCommandValidator : AbstractValidator<CreateD
         RuleFor(x => x.SecurityDeposit)
             .GreaterThanOrEqualTo(0).WithMessage("Security deposit cannot be negative.");
 
+        RuleFor(x => x.Frequency)
+            .IsInEnum().WithMessage("Invalid rent frequency.");
+
         RuleFor(x => x.DueDayOfMonth)
             .InclusiveBetween(1, 28).WithMessage("Due day of month must be between 1 and 28.");
 
