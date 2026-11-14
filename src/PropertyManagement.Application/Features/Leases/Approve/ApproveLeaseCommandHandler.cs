@@ -65,7 +65,6 @@ public sealed class ApproveLeaseCommandHandler(
 
 // Unit occupancy is dynamically computed from active leases
 
-        leaseRepository.Update(lease);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));

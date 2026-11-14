@@ -53,7 +53,6 @@ public sealed class TerminateLeaseCommandHandler(
 
 // Unit operational status remains untouched; lease status is now Terminated
 
-        leaseRepository.Update(lease);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));

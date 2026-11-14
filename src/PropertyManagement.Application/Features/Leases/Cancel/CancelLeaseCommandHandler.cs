@@ -35,7 +35,6 @@ public sealed class CancelLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        leaseRepository.Update(lease);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));
