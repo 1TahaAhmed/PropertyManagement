@@ -174,13 +174,13 @@ public sealed class OrganizationsController(
         [FromBody] ChangeMemberRoleRequest request,
         CancellationToken cancellationToken)
     {
-        if (!TryGetOrganizationId(currentUser, out var organizationId, out var errorResult))
+        if (!TryGetActorContext(currentUser, out var organizationId, out var actorUserId, out var actorRole, out var errorResult))
         {
             return errorResult!;
         }
 
         var result = await sender.Send(
-            new ChangeMemberRoleCommand(organizationId, memberId, request.Role),
+            new ChangeMemberRoleCommand(organizationId, memberId, request.Role, actorUserId, actorRole),
             cancellationToken);
 
         if (result.IsFailure)
@@ -202,13 +202,13 @@ public sealed class OrganizationsController(
         Guid memberId,
         CancellationToken cancellationToken)
     {
-        if (!TryGetOrganizationId(currentUser, out var organizationId, out var errorResult))
+        if (!TryGetActorContext(currentUser, out var organizationId, out var actorUserId, out var actorRole, out var errorResult))
         {
             return errorResult!;
         }
 
         var result = await sender.Send(
-            new DeactivateMemberCommand(organizationId, memberId),
+            new DeactivateMemberCommand(organizationId, memberId, actorUserId, actorRole),
             cancellationToken);
 
         if (result.IsFailure)

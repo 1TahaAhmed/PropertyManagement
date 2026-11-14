@@ -15,6 +15,14 @@ public sealed class DeactivateMemberCommandHandler(
         DeactivateMemberCommand command,
         CancellationToken cancellationToken)
     {
+        if (command.ActorRole is not (MembershipRole.Owner or MembershipRole.Admin))
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.InsufficientPermissions",
+                Message: "Only Owners and Admins can deactivate organization members.",
+                Type: ErrorType.Forbidden));
+        }
+
         var member = await organizationRepository.GetMemberByIdAsync(
             command.MemberId,
             command.OrganizationId,
@@ -26,6 +34,32 @@ public sealed class DeactivateMemberCommandHandler(
                 Code: "Organization.MemberNotFound",
                 Message: "Organization member was not found.",
                 Type: ErrorType.NotFound));
+        }
+
+        if (member.UserId == command.ActorUserId)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.CannotDeactivateSelf",
+                Message: "Members cannot deactivate themselves.",
+                Type: ErrorType.Forbidden));
+        }
+
+        if (member.Role == MembershipRole.Owner &&
+            command.ActorRole != MembershipRole.Owner)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.OwnerRoleRestricted",
+                Message: "Only an Owner can deactivate an Owner.",
+                Type: ErrorType.Forbidden));
+        }
+
+        if (command.ActorRole == MembershipRole.Admin &&
+            member.Role is MembershipRole.Owner or MembershipRole.Admin)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.AdminCannotModifyPeerOrOwner",
+                Message: "Admins cannot deactivate Owners or other Admins.",
+                Type: ErrorType.Forbidden));
         }
 
         if (member.Role == MembershipRole.Owner && member.Status == MembershipStatus.Active)

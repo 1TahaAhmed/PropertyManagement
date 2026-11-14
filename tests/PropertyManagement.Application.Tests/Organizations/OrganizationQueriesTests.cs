@@ -88,7 +88,7 @@ public class OrganizationQueriesTests
         _organizationRepository.CountActiveOwnersAsync(orgId, Arg.Any<CancellationToken>()).Returns(1);
 
         var handler = new DeactivateMemberCommandHandler(_organizationRepository, _clock);
-        var result = await handler.Handle(new DeactivateMemberCommand(orgId, member.Id), CancellationToken.None);
+        var result = await handler.Handle(new DeactivateMemberCommand(orgId, member.Id, Guid.NewGuid(), MembershipRole.Owner), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Organization.LastOwnerProtected", result.Errors.First().Code);

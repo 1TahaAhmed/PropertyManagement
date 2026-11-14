@@ -15,6 +15,14 @@ public sealed class ChangeMemberRoleCommandHandler(
         ChangeMemberRoleCommand command,
         CancellationToken cancellationToken)
     {
+        if (command.ActorRole is not (MembershipRole.Owner or MembershipRole.Admin))
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.InsufficientPermissions",
+                Message: "Only Owners and Admins can change organization member roles.",
+                Type: ErrorType.Forbidden));
+        }
+
         var member = await organizationRepository.GetMemberByIdAsync(
             command.MemberId,
             command.OrganizationId,
@@ -26,6 +34,32 @@ public sealed class ChangeMemberRoleCommandHandler(
                 Code: "Organization.MemberNotFound",
                 Message: "Organization member was not found.",
                 Type: ErrorType.NotFound));
+        }
+
+        if (member.UserId == command.ActorUserId)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.CannotChangeOwnRole",
+                Message: "Members cannot change their own role.",
+                Type: ErrorType.Forbidden));
+        }
+
+        if ((command.NewRole == MembershipRole.Owner || member.Role == MembershipRole.Owner) &&
+            command.ActorRole != MembershipRole.Owner)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.OwnerRoleRestricted",
+                Message: "Only an Owner can grant or revoke the Owner role.",
+                Type: ErrorType.Forbidden));
+        }
+
+        if (command.ActorRole == MembershipRole.Admin &&
+            member.Role is MembershipRole.Owner or MembershipRole.Admin)
+        {
+            return Result.Failure(new Error(
+                Code: "Organization.AdminCannotModifyPeerOrOwner",
+                Message: "Admins cannot modify Owners or other Admins.",
+                Type: ErrorType.Forbidden));
         }
 
         if (member.Role == MembershipRole.Owner &&
