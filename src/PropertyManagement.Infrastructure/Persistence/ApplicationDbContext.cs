@@ -145,6 +145,14 @@ namespace PropertyManagement.Infrastructure.Persistence
             var transaction = await Database.BeginTransactionAsync(cancellationToken);
             return new EfDbTransaction(transaction);
         }
+
+        public async Task<IDbTransaction> BeginTransactionAsync(
+            System.Data.IsolationLevel isolationLevel,
+            CancellationToken cancellationToken = default)
+        {
+            var transaction = await Database.BeginTransactionAsync(isolationLevel, cancellationToken);
+            return new EfDbTransaction(transaction);
+        }
     }
 
     internal sealed class EfDbTransaction(IDbContextTransaction transaction) : IDbTransaction

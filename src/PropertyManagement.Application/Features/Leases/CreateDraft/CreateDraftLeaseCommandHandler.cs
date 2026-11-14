@@ -1,3 +1,4 @@
+using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Properties;
@@ -57,23 +58,7 @@ public sealed class CreateDraftLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        // 3. Verify No Overlapping Lease for this Unit
-        var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
-            request.UnitId,
-            request.OrganizationId,
-            request.StartDate,
-            request.EndDate,
-            cancellationToken: cancellationToken);
-
-        if (hasOverlap)
-        {
-            return Result<LeaseResponse>.Failure(new Error(
-                Code: "Lease.OverlapConflict",
-                Message: "A lease already exists that overlaps with the requested date range for this unit.",
-                Type: ErrorType.Conflict));
-        }
-
-        // 4. Verify Resident if provided
+        // 3. Verify Resident if provided
         if (request.PrimaryResidentId.HasValue && request.PrimaryResidentId.Value != Guid.Empty)
         {
             var resident = await residentRepository.GetByIdAsync(request.PrimaryResidentId.Value, request.OrganizationId, cancellationToken);
@@ -94,7 +79,7 @@ public sealed class CreateDraftLeaseCommandHandler(
             }
         }
 
-        // 5. Construct Lease Aggregate
+        // 4. Construct Lease Aggregate
         var terms = new LeaseFinancialTerms(
             request.RentAmount,
             request.SecurityDeposit,
@@ -119,8 +104,28 @@ public sealed class CreateDraftLeaseCommandHandler(
             lease.AddResident(request.PrimaryResidentId.Value, LeaseResidentRole.PrimaryTenant, utcNow);
         }
 
+        // 5. Acquire Serializable transaction + Unit UPDLOCK before overlap check and insert
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await leaseRepository.AcquireUnitLockAsync(request.UnitId, request.OrganizationId, cancellationToken);
+
+        var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
+            request.UnitId,
+            request.OrganizationId,
+            request.StartDate,
+            request.EndDate,
+            cancellationToken: cancellationToken);
+
+        if (hasOverlap)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Lease.OverlapConflict",
+                Message: "A lease already exists that overlaps with the requested date range for this unit.",
+                Type: ErrorType.Conflict));
+        }
+
         await leaseRepository.AddAsync(lease, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));
     }

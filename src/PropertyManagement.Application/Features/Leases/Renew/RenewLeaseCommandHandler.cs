@@ -1,3 +1,4 @@
+using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Repositories;
@@ -27,23 +28,6 @@ public sealed class RenewLeaseCommandHandler(
 
         var newStartDate = existingLease.EndDate.AddDays(1);
 
-        // Verify no future overlapping lease exists
-        var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
-            existingLease.UnitId,
-            request.OrganizationId,
-            newStartDate,
-            request.NewEndDate,
-            excludingLeaseId: existingLease.Id,
-            cancellationToken: cancellationToken);
-
-        if (hasOverlap)
-        {
-            return Result<LeaseResponse>.Failure(new Error(
-                Code: "Lease.OverlapConflict",
-                Message: "Cannot renew lease because another lease already exists for the renewal duration.",
-                Type: ErrorType.Conflict));
-        }
-
         LeaseFinancialTerms? newTerms = null;
         if (request.NewRentAmount.HasValue
             || request.NewSecurityDeposit.HasValue
@@ -62,6 +46,7 @@ public sealed class RenewLeaseCommandHandler(
         }
 
         var utcNow = clock.UtcNow;
+
         Lease renewedLease;
         try
         {
@@ -75,8 +60,29 @@ public sealed class RenewLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await leaseRepository.AcquireUnitLockAsync(existingLease.UnitId, request.OrganizationId, cancellationToken);
+
+        // Verify no future overlapping lease exists under Serializable + Unit UPDLOCK
+        var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
+            existingLease.UnitId,
+            request.OrganizationId,
+            newStartDate,
+            request.NewEndDate,
+            excludingLeaseId: existingLease.Id,
+            cancellationToken: cancellationToken);
+
+        if (hasOverlap)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Lease.OverlapConflict",
+                Message: "Cannot renew lease because another lease already exists for the renewal duration.",
+                Type: ErrorType.Conflict));
+        }
+
         await leaseRepository.AddAsync(renewedLease, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(renewedLease));
     }

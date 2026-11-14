@@ -45,6 +45,9 @@ public class LeaseResidentPersistenceIntegrationTests
 
         public Task<IDbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
             => context.BeginTransactionAsync(cancellationToken);
+
+        public Task<IDbTransaction> BeginTransactionAsync(System.Data.IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+            => context.BeginTransactionAsync(isolationLevel, cancellationToken);
     }
 
     private static ApplicationDbContext CreateDbContext(string dbName, ICurrentUser? currentUser)

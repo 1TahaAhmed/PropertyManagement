@@ -1,3 +1,4 @@
+using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Repositories;
@@ -32,7 +33,10 @@ public sealed class ApproveLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        // Re-verify no overlapping active lease before activation
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await leaseRepository.AcquireUnitLockAsync(lease.UnitId, request.OrganizationId, cancellationToken);
+
+        // Re-verify no overlapping active lease before activation under Serializable + Unit UPDLOCK
         var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
             lease.UnitId,
             request.OrganizationId,
@@ -63,9 +67,8 @@ public sealed class ApproveLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-// Unit occupancy is dynamically computed from active leases
-
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));
     }

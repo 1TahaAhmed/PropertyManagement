@@ -333,7 +333,14 @@ namespace PropertyManagement.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId", "UnitId", "StartDate", "EndDate");
 
-                    b.ToTable("Leases", (string)null);
+                    b.ToTable("Leases", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Leases_DateRange", "[StartDate] < [EndDate]");
+
+                            t.HasCheckConstraint("CK_Leases_DueDayOfMonth", "[DueDayOfMonth] BETWEEN 1 AND 28");
+
+                            t.HasCheckConstraint("CK_Leases_RentAmount", "[RentAmount] > 0");
+                        });
                 });
 
             modelBuilder.Entity("PropertyManagement.Domain.Entities.Leases.LeaseResident", b =>

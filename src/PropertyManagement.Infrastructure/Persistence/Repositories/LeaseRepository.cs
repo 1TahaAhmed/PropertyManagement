@@ -14,6 +14,19 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
             .FirstOrDefaultAsync(l => l.Id == id && l.OrganizationId == organizationId, cancellationToken);
     }
 
+    public async Task AcquireUnitLockAsync(
+        Guid unitId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (context.Database.IsSqlServer())
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM [Units] WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {unitId} AND [OrganizationId] = {organizationId}",
+                cancellationToken);
+        }
+    }
+
     public async Task<bool> HasOverlappingLeaseAsync(
         Guid unitId,
         Guid organizationId,
@@ -32,9 +45,12 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
             query = query.Where(l => l.Id != excludingLeaseId.Value);
         }
 
-        var leases = await query.ToListAsync(cancellationToken);
-
-        return leases.Any(l => l.OverlapsWith(startDate, endDate));
+        return await query.AnyAsync(
+            l => l.StartDate <= endDate &&
+                 (l.Status == LeaseStatus.Terminated && l.TerminationDetails != null
+                     ? l.TerminationDetails.TerminationDate >= startDate
+                     : l.EndDate >= startDate),
+            cancellationToken);
     }
 
     public async Task<IReadOnlyList<Lease>> GetByUnitIdAsync(

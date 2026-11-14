@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Security;
+using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Features.Leases.AddResident;
 using PropertyManagement.Application.Features.Leases.Approve;
 using PropertyManagement.Application.Features.Leases.Cancel;
+using PropertyManagement.Application.Features.Leases.CreateDraft;
+using PropertyManagement.Application.Features.Leases.Renew;
 using PropertyManagement.Application.Features.Leases.Submit;
 using PropertyManagement.Application.Features.Leases.Terminate;
 using PropertyManagement.Domain.Entities.Leases;
@@ -83,7 +86,7 @@ public class LeaseRelationalPersistenceIntegrationTests
     /// <summary>
     /// Uses the production ApplicationDbContext configurations and model on a real relational SQLite engine.
     /// Only adapts SQL Server's native rowversion column generation (unavailable in SQLite) while leaving
-    /// all Id primary key ValueGeneratedNever configurations, foreign keys, and indexes untouched.
+    /// all Id primary key ValueGeneratedNever configurations, check constraints, foreign keys, and indexes untouched.
     /// </summary>
     private sealed class SqliteRelationalApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
@@ -336,5 +339,183 @@ public class LeaseRelationalPersistenceIntegrationTests
         Assert.Contains("\"Status\"", cancelUpdateSql, StringComparison.Ordinal);
         Assert.Contains("\"UpdatedAtUtc\"", cancelUpdateSql, StringComparison.Ordinal);
         Assert.DoesNotContain("\"RentAmount\"", cancelUpdateSql, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task HasOverlappingLeaseAsync_ShouldExecuteOverlapInSqlAndRespectCancelledAndTerminatedLeases()
+    {
+        await using var connection = new SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+
+        var utcNow = new DateTime(2026, 11, 14, 10, 0, 0, DateTimeKind.Utc);
+        var currentUser = new TestCurrentUser { UserId = Guid.NewGuid(), Role = "Owner" };
+        var (orgId, draftSeedId, primaryId, _) = await SeedRelationalGraphAsync(connection, currentUser, utcNow);
+
+        Guid propertyId;
+        Guid unitId;
+        await using (var readCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            propertyId = (await readCtx.Properties.FirstAsync()).Id;
+            unitId = (await readCtx.Units.FirstAsync()).Id;
+        }
+
+        // Seed 1 cancelled lease and 1 terminated lease (terminated early at 2027-10-15)
+        var cancelledLease = Lease.CreateDraft(
+            orgId, propertyId, unitId, new DateOnly(2027, 2, 1), new DateOnly(2027, 6, 30), new LeaseFinancialTerms(15000m, 30000m), utcNow);
+        cancelledLease.Cancel(utcNow);
+
+        var terminatedLease = Lease.CreateDraft(
+            orgId, propertyId, unitId, new DateOnly(2027, 8, 1), new DateOnly(2028, 7, 31), new LeaseFinancialTerms(15000m, 30000m), utcNow);
+        terminatedLease.AddResident(primaryId, LeaseResidentRole.PrimaryTenant, utcNow);
+        terminatedLease.SubmitForApproval(utcNow);
+        terminatedLease.Approve(utcNow);
+        terminatedLease.Terminate(new DateOnly(2027, 10, 15), "Tenant moved out early", currentUser.UserId!.Value, utcNow);
+
+        await using (var writeCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            await writeCtx.Leases.AddRangeAsync(cancelledLease, terminatedLease);
+            await writeCtx.SaveChangesAsync();
+        }
+
+        var sqlInterceptor = new SqlCaptureInterceptor();
+        await using (var queryCtx = CreateSqliteDbContext(connection, currentUser, sqlInterceptor))
+        {
+            var repo = new LeaseRepository(queryCtx);
+
+            Assert.True(await repo.HasOverlappingLeaseAsync(unitId, orgId, new DateOnly(2026, 11, 15), new DateOnly(2026, 12, 1)));
+            Assert.True(await repo.HasOverlappingLeaseAsync(unitId, orgId, new DateOnly(2027, 10, 15), new DateOnly(2027, 10, 20), excludingLeaseId: draftSeedId));
+
+            // Cancelled range (excluding draftSeedId) does NOT overlap
+            Assert.False(await repo.HasOverlappingLeaseAsync(unitId, orgId, new DateOnly(2027, 2, 1), new DateOnly(2027, 6, 30), excludingLeaseId: draftSeedId));
+            // After TerminationDate (2027-10-16..2028-05-01) does NOT overlap terminatedLease even though original EndDate was 2028-07-31
+            Assert.False(await repo.HasOverlappingLeaseAsync(unitId, orgId, new DateOnly(2027, 10, 16), new DateOnly(2028, 5, 1), excludingLeaseId: draftSeedId));
+        }
+
+        Assert.Contains(sqlInterceptor.Commands, sql =>
+            sql.Contains("SELECT EXISTS", StringComparison.OrdinalIgnoreCase) &&
+            sql.Contains("\"StartDate\"", StringComparison.Ordinal) &&
+            sql.Contains("\"TerminationDate\"", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task LeasesTable_ShouldEnforceDatabaseCheckConstraints_ForDateRangeRentAmountAndDueDayOfMonth()
+    {
+        await using var connection = new SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+
+        var utcNow = new DateTime(2026, 11, 14, 10, 0, 0, DateTimeKind.Utc);
+        var currentUser = new TestCurrentUser { UserId = Guid.NewGuid(), Role = "Owner" };
+        var (orgId, _, _, _) = await SeedRelationalGraphAsync(connection, currentUser, utcNow);
+
+        Guid propertyId;
+        Guid unitId;
+        await using (var readCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            propertyId = (await readCtx.Properties.FirstAsync()).Id;
+            unitId = (await readCtx.Units.FirstAsync()).Id;
+        }
+
+        // 1. Violate CK_Leases_DateRange (StartDate >= EndDate)
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO Leases (Id, OrganizationId, PropertyId, UnitId, StartDate, EndDate, Status, RentAmount, SecurityDeposit, Frequency, DueDayOfMonth, GracePeriodDays, LateFeePercentage, CreatedAtUtc, RowVersion)
+                VALUES ($id, $orgId, $propId, $unitId, '2027-05-01', '2027-05-01', 1, 10000, 20000, 1, 1, 5, 0, '2026-11-14T10:00:00Z', X'');";
+            cmd.Parameters.AddWithValue("$id", Guid.NewGuid());
+            cmd.Parameters.AddWithValue("$orgId", orgId);
+            cmd.Parameters.AddWithValue("$propId", propertyId);
+            cmd.Parameters.AddWithValue("$unitId", unitId);
+
+            var ex = await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteNonQueryAsync());
+            Assert.Contains("CHECK constraint failed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // 2. Violate CK_Leases_RentAmount (RentAmount <= 0)
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO Leases (Id, OrganizationId, PropertyId, UnitId, StartDate, EndDate, Status, RentAmount, SecurityDeposit, Frequency, DueDayOfMonth, GracePeriodDays, LateFeePercentage, CreatedAtUtc, RowVersion)
+                VALUES ($id, $orgId, $propId, $unitId, '2028-01-01', '2028-12-31', 1, 0, 20000, 1, 1, 5, 0, '2026-11-14T10:00:00Z', X'');";
+            cmd.Parameters.AddWithValue("$id", Guid.NewGuid());
+            cmd.Parameters.AddWithValue("$orgId", orgId);
+            cmd.Parameters.AddWithValue("$propId", propertyId);
+            cmd.Parameters.AddWithValue("$unitId", unitId);
+
+            var ex = await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteNonQueryAsync());
+            Assert.Contains("CHECK constraint failed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // 3. Violate CK_Leases_DueDayOfMonth (DueDayOfMonth NOT BETWEEN 1 AND 28)
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText = @"
+                INSERT INTO Leases (Id, OrganizationId, PropertyId, UnitId, StartDate, EndDate, Status, RentAmount, SecurityDeposit, Frequency, DueDayOfMonth, GracePeriodDays, LateFeePercentage, CreatedAtUtc, RowVersion)
+                VALUES ($id, $orgId, $propId, $unitId, '2028-01-01', '2028-12-31', 1, 10000, 20000, 1, 29, 5, 0, '2026-11-14T10:00:00Z', X'');";
+            cmd.Parameters.AddWithValue("$id", Guid.NewGuid());
+            cmd.Parameters.AddWithValue("$orgId", orgId);
+            cmd.Parameters.AddWithValue("$propId", propertyId);
+            cmd.Parameters.AddWithValue("$unitId", unitId);
+
+            var ex = await Assert.ThrowsAsync<SqliteException>(() => cmd.ExecuteNonQueryAsync());
+            Assert.Contains("CHECK constraint failed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public async Task CreateDraftAndRenew_UnderSerializableTransaction_ShouldPreventOverlappingBookingsOnRelationalDatabase()
+    {
+        await using var connection = new SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+
+        var utcNow = new DateTime(2026, 11, 14, 10, 0, 0, DateTimeKind.Utc);
+        var currentUser = new TestCurrentUser { UserId = Guid.NewGuid(), Role = "Owner" };
+        var (orgId, _, primaryId, _) = await SeedRelationalGraphAsync(connection, currentUser, utcNow);
+
+        Guid propertyId;
+        Guid unitId;
+        await using (var readCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            propertyId = (await readCtx.Properties.FirstAsync()).Id;
+            unitId = (await readCtx.Units.FirstAsync()).Id;
+        }
+
+        // Overlapping CreateDraft must return 409 Conflict
+        await using (var overlapCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            var handler = new CreateDraftLeaseCommandHandler(
+                new PropertyRepository(overlapCtx),
+                new UnitRepository(overlapCtx),
+                new ResidentRepository(overlapCtx),
+                new LeaseRepository(overlapCtx),
+                overlapCtx,
+                new TestClock(utcNow.AddMinutes(1)));
+
+            var overlapResult = await handler.Handle(
+                new CreateDraftLeaseCommand(
+                    orgId, propertyId, unitId, new DateOnly(2027, 6, 1), new DateOnly(2028, 5, 31), 22000m, 44000m, PrimaryResidentId: primaryId),
+                CancellationToken.None);
+
+            Assert.True(overlapResult.IsFailure);
+            Assert.Contains(overlapResult.Errors, e => e.Type == ErrorType.Conflict);
+        }
+
+        // Non-overlapping CreateDraft (2027-12-01..2028-11-30) succeeds inside Serializable transaction
+        await using (var validCtx = CreateSqliteDbContext(connection, currentUser))
+        {
+            var handler = new CreateDraftLeaseCommandHandler(
+                new PropertyRepository(validCtx),
+                new UnitRepository(validCtx),
+                new ResidentRepository(validCtx),
+                new LeaseRepository(validCtx),
+                validCtx,
+                new TestClock(utcNow.AddMinutes(2)));
+
+            var createResult = await handler.Handle(
+                new CreateDraftLeaseCommand(
+                    orgId, propertyId, unitId, new DateOnly(2027, 12, 1), new DateOnly(2028, 11, 30), 22000m, 44000m, PrimaryResidentId: primaryId),
+                CancellationToken.None);
+
+            Assert.True(createResult.IsSuccess);
+        }
     }
 }

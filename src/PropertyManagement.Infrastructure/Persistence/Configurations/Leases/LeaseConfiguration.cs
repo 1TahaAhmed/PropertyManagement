@@ -9,7 +9,12 @@ public sealed class LeaseConfiguration : IEntityTypeConfiguration<Lease>
 {
     public void Configure(EntityTypeBuilder<Lease> builder)
     {
-        builder.ToTable("Leases");
+        builder.ToTable("Leases", t =>
+        {
+            t.HasCheckConstraint("CK_Leases_DateRange", "[StartDate] < [EndDate]");
+            t.HasCheckConstraint("CK_Leases_RentAmount", "[RentAmount] > 0");
+            t.HasCheckConstraint("CK_Leases_DueDayOfMonth", "[DueDayOfMonth] BETWEEN 1 AND 28");
+        });
 
         builder.HasKey(l => l.Id);
 

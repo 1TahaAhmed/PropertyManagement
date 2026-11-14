@@ -7,6 +7,11 @@ public interface ILeaseRepository
 {
     Task<Lease?> GetByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default);
 
+    Task AcquireUnitLockAsync(
+        Guid unitId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default);
+
     Task<bool> HasOverlappingLeaseAsync(
         Guid unitId,
         Guid organizationId,
