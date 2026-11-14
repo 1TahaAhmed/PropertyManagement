@@ -1,4 +1,5 @@
-﻿using MediatR;
+using System.Text.Encodings.Web;
+using MediatR;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Common.Results;
@@ -20,9 +21,22 @@ public sealed class ForgotPasswordCommandHandler(
 
         if (tokenResult.IsSuccess)
         {
-            var resetToken = tokenResult.Value;
+            var encodedToken = HtmlEncoder.Default.Encode(tokenResult.Value);
             var subject = "Reset Your Password";
-            var body = $"Use the following token to reset your password:\n\n{resetToken}\n\nIf you did not request this, please ignore this email.";
+            var body = $"""
+                <!doctype html>
+                <html lang="en">
+                <head>
+                    <meta charset="utf-8">
+                    <title>Reset Your Password</title>
+                </head>
+                <body>
+                    <p>Use the following token to reset your password:</p>
+                    <p><code>{encodedToken}</code></p>
+                    <p>If you did not request this, please ignore this email.</p>
+                </body>
+                </html>
+                """;
 
             await emailSender.SendAsync(
                 request.Email,

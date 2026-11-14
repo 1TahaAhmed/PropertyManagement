@@ -14,4 +14,6 @@ public sealed record UpdateResidentCommand(
     string? PreferredName = null,
     string? Email = null,
     string? AlternatePhone = null,
-    string? RowVersion = null) : IRequest<Result<ResidentResponse>>;
+    string? RowVersion = null,
+    string? NationalIdOrPassport = null,
+    string? Notes = null) : IRequest<Result<ResidentResponse>>;

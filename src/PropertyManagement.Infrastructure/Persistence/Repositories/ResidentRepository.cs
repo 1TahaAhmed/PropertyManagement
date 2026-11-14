@@ -32,7 +32,9 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
         ResidentStatus? status,
         int pageNumber,
         int pageSize,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        LeaseResidentRole? leaseRole = null,
+        bool onlyLeaseHolders = false)
     {
         var query = dbContext.Residents
             .AsNoTracking()
@@ -45,12 +47,29 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
                 r.FirstName.Contains(trimmedSearch) ||
                 r.LastName.Contains(trimmedSearch) ||
                 r.Phone.Contains(trimmedSearch) ||
+                r.NationalIdOrPassport.Contains(trimmedSearch) ||
                 (r.Email != null && r.Email.Contains(trimmedSearch)));
         }
 
         if (status.HasValue)
         {
             query = query.Where(r => r.Status == status.Value);
+        }
+
+        if (onlyLeaseHolders)
+        {
+            query = query.Where(r => dbContext.LeaseResidents.Any(lr =>
+                lr.OrganizationId == organizationId &&
+                lr.ResidentId == r.Id &&
+                (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant)));
+        }
+
+        if (leaseRole.HasValue)
+        {
+            query = query.Where(r => dbContext.LeaseResidents.Any(lr =>
+                lr.OrganizationId == organizationId &&
+                lr.ResidentId == r.Id &&
+                lr.Role == leaseRole.Value));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -65,6 +84,18 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
             .ToListAsync(cancellationToken);
 
         return (items, totalCount);
+    }
+
+    public Task<bool> IsLeaseHolderAsync(
+        Guid residentId,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        return dbContext.LeaseResidents.AnyAsync(
+            lr => lr.OrganizationId == organizationId &&
+                  lr.ResidentId == residentId &&
+                  (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant),
+            cancellationToken);
     }
 
     public async Task AddAsync(Resident resident, CancellationToken cancellationToken = default)

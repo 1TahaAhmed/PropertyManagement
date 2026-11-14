@@ -30,7 +30,6 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         }
 
         var permissions = GetPermissionsForRole(role);
-
         if (permissions.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
@@ -53,14 +52,11 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Units.Create,
                 Permissions.Units.Update,
                 Permissions.Units.ChangeStatus,
-                Permissions.Tenants.Read,
-                Permissions.Tenants.Create,
-                Permissions.Tenants.Update,
-                Permissions.Tenants.Deactivate,
-                Permissions.Tenants.Blacklist,
                 Permissions.Residents.Read,
                 Permissions.Residents.Create,
                 Permissions.Residents.Update,
+                Permissions.Residents.Deactivate,
+                Permissions.Residents.Blacklist,
                 Permissions.Residents.Archive,
                 Permissions.Residents.ManageContacts,
                 Permissions.Leases.Read,
@@ -87,13 +83,10 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Units.Create,
                 Permissions.Units.Update,
                 Permissions.Units.ChangeStatus,
-                Permissions.Tenants.Read,
-                Permissions.Tenants.Create,
-                Permissions.Tenants.Update,
-                Permissions.Tenants.Deactivate,
                 Permissions.Residents.Read,
                 Permissions.Residents.Create,
                 Permissions.Residents.Update,
+                Permissions.Residents.Deactivate,
                 Permissions.Residents.ManageContacts,
                 Permissions.Leases.Read,
                 Permissions.Leases.Create,
@@ -110,7 +103,6 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
             [
                 Permissions.Properties.Read,
                 Permissions.Units.Read,
-                Permissions.Tenants.Read,
                 Permissions.Residents.Read,
                 Permissions.Leases.Read,
                 Permissions.Organizations.Read

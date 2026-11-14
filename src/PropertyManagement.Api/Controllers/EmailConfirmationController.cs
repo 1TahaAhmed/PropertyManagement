@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 ﻿using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Api.Contracts.Authentication.EmailConfirmation;
@@ -8,6 +9,7 @@ using PropertyManagement.Application.Features.Authentication.EmailConfirmation.R
 namespace PropertyManagement.Api.Controllers;
 
 [ApiController]
+[EnableRateLimiting("auth")]
 [Route("api/v1/email-confirmation")]
 public sealed class EmailConfirmationController(
     ISender sender) : ControllerBase

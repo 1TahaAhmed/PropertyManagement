@@ -14,6 +14,7 @@ public sealed record ResidentSummaryResponse(
     string? Email,
     string Phone,
     string? AlternatePhone,
+    string NationalIdOrPassport,
     ResidentStatus Status,
     Guid? UserId,
     int EmergencyContactsCount,

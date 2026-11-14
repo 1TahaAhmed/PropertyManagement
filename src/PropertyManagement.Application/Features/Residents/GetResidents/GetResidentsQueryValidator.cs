@@ -13,6 +13,10 @@ public sealed class GetResidentsQueryValidator : AbstractValidator<GetResidentsQ
             .IsInEnum().WithMessage("Invalid resident status.")
             .When(x => x.Status.HasValue);
 
+        RuleFor(x => x.LeaseRole)
+            .IsInEnum().WithMessage("Invalid lease resident role.")
+            .When(x => x.LeaseRole.HasValue);
+
         RuleFor(x => x.PageNumber)
             .GreaterThan(0).WithMessage("Page number must be at least 1.");
 

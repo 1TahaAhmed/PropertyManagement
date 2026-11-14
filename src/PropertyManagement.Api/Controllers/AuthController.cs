@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.RateLimiting;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,7 @@ namespace PropertyManagement.Api.Controllers;
 
 [Route("api/v1/[controller]")]
 [ApiController]
+[EnableRateLimiting("auth")]
 public sealed class AuthController(ISender sender, ICurrentUser currentUser) : ControllerBase
 {
     [HttpPost("register")]

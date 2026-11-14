@@ -32,8 +32,22 @@ public sealed class TerminateLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        var utcNow = clock.UtcNow;
+        if (!string.IsNullOrWhiteSpace(request.RowVersion))
+        {
+            try
+            {
+                leaseRepository.SetRowVersion(lease, Convert.FromBase64String(request.RowVersion));
+            }
+            catch (FormatException)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Lease.InvalidRowVersion",
+                    Message: "The provided RowVersion concurrency token is invalid.",
+                    Type: ErrorType.Validation));
+            }
+        }
 
+        var utcNow = clock.UtcNow;
         try
         {
             lease.Terminate(
@@ -50,8 +64,6 @@ public sealed class TerminateLeaseCommandHandler(
                 Message: ex.Message,
                 Type: ErrorType.Validation));
         }
-
-// Unit operational status remains untouched; lease status is now Terminated
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

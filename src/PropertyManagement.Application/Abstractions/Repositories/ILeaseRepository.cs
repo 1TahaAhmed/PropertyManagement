@@ -6,12 +6,10 @@ namespace PropertyManagement.Application.Abstractions.Repositories;
 public interface ILeaseRepository
 {
     Task<Lease?> GetByIdAsync(Guid id, Guid organizationId, CancellationToken cancellationToken = default);
-
     Task AcquireUnitLockAsync(
         Guid unitId,
         Guid organizationId,
         CancellationToken cancellationToken = default);
-
     Task<bool> HasOverlappingLeaseAsync(
         Guid unitId,
         Guid organizationId,
@@ -19,12 +17,10 @@ public interface ILeaseRepository
         DateOnly endDate,
         Guid? excludingLeaseId = null,
         CancellationToken cancellationToken = default);
-
     Task<IReadOnlyList<Lease>> GetByUnitIdAsync(
         Guid unitId,
         Guid organizationId,
         CancellationToken cancellationToken = default);
-
     Task<(IReadOnlyList<Lease> Items, int TotalCount)> GetPagedAsync(
         Guid organizationId,
         Guid? propertyId,
@@ -33,13 +29,11 @@ public interface ILeaseRepository
         int pageNumber,
         int pageSize,
         CancellationToken cancellationToken = default);
-
     Task<Lease?> GetActiveLeaseForUnitAsync(
         Guid unitId,
         Guid organizationId,
         CancellationToken cancellationToken = default);
-
     Task AddAsync(Lease lease, CancellationToken cancellationToken = default);
-
+    void SetRowVersion(Lease lease, byte[] rowVersion);
     void Update(Lease lease);
 }

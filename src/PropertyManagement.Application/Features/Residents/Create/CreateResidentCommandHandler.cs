@@ -25,7 +25,9 @@ public sealed class CreateResidentCommandHandler(
             middleName: request.MiddleName,
             preferredName: request.PreferredName,
             email: request.Email,
-            alternatePhone: request.AlternatePhone);
+            alternatePhone: request.AlternatePhone,
+            nationalIdOrPassport: request.NationalIdOrPassport ?? string.Empty,
+            notes: request.Notes ?? string.Empty);
 
         await residentRepository.AddAsync(resident, cancellationToken);
         await residentRepository.SaveChangesAsync(cancellationToken);

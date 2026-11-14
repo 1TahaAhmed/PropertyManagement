@@ -7,7 +7,10 @@ public sealed record LeaseResidentResponse(
     Guid Id,
     Guid ResidentId,
     LeaseResidentRole Role,
-    DateTime AddedAtUtc);
+    DateTime AddedAtUtc,
+    bool IsFinanciallyResponsible,
+    bool CanManageLease,
+    bool IsOccupant);
 
 public sealed record LeaseResponse(
     Guid Id,
@@ -52,7 +55,14 @@ public sealed record LeaseResponse(
             lease.TerminationDetails?.TerminationDate,
             lease.TerminationDetails?.Reason,
             lease.TerminationDetails?.Notes,
-            lease.Residents.Select(r => new LeaseResidentResponse(r.Id, r.ResidentId, r.Role, r.AddedAtUtc)).ToList(),
+            lease.Residents.Select(r => new LeaseResidentResponse(
+                r.Id,
+                r.ResidentId,
+                r.Role,
+                r.AddedAtUtc,
+                r.IsFinanciallyResponsible,
+                r.CanManageLease,
+                r.IsOccupant)).ToList(),
             lease.CreatedAtUtc,
             lease.UpdatedAtUtc,
             Convert.ToBase64String(lease.RowVersion));

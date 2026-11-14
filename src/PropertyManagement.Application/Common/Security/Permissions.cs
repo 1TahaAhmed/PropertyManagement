@@ -18,20 +18,13 @@ public static partial class Permissions
         public const string ChangeStatus = "Permissions.Units.ChangeStatus";
     }
 
-    public static class Tenants
-    {
-        public const string Read = "Permissions.Tenants.Read";
-        public const string Create = "Permissions.Tenants.Create";
-        public const string Update = "Permissions.Tenants.Update";
-        public const string Deactivate = "Permissions.Tenants.Deactivate";
-        public const string Blacklist = "Permissions.Tenants.Blacklist";
-    }
-
     public static class Residents
     {
         public const string Read = "Permissions.Residents.Read";
         public const string Create = "Permissions.Residents.Create";
         public const string Update = "Permissions.Residents.Update";
+        public const string Deactivate = "Permissions.Residents.Deactivate";
+        public const string Blacklist = "Permissions.Residents.Blacklist";
         public const string Archive = "Permissions.Residents.Archive";
         public const string ManageContacts = "Permissions.Residents.ManageContacts";
     }

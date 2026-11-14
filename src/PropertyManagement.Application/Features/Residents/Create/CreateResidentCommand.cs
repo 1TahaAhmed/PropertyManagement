@@ -12,4 +12,6 @@ public sealed record CreateResidentCommand(
     string? MiddleName = null,
     string? PreferredName = null,
     string? Email = null,
-    string? AlternatePhone = null) : IRequest<Result<ResidentResponse>>;
+    string? AlternatePhone = null,
+    string? NationalIdOrPassport = null,
+    string? Notes = null) : IRequest<Result<ResidentResponse>>;

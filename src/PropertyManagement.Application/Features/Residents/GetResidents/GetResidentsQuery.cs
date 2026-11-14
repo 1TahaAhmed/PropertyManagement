@@ -11,4 +11,6 @@ public sealed record GetResidentsQuery(
     string? SearchTerm = null,
     ResidentStatus? Status = null,
     int PageNumber = 1,
-    int PageSize = 10) : IRequest<Result<PagedList<ResidentSummaryResponse>>>;
+    int PageSize = 10,
+    LeaseResidentRole? LeaseRole = null,
+    bool OnlyLeaseHolders = false) : IRequest<Result<PagedList<ResidentSummaryResponse>>>;

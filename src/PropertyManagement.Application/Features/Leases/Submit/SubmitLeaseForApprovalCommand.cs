@@ -6,4 +6,5 @@ namespace PropertyManagement.Application.Features.Leases.Submit;
 
 public sealed record SubmitLeaseForApprovalCommand(
     Guid OrganizationId,
-    Guid LeaseId) : IRequest<Result<LeaseResponse>>;
+    Guid LeaseId,
+    string? RowVersion = null) : IRequest<Result<LeaseResponse>>;

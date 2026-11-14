@@ -22,7 +22,6 @@ public sealed class CreateDraftLeaseCommandHandler(
 {
     public async Task<Result<LeaseResponse>> Handle(CreateDraftLeaseCommand request, CancellationToken cancellationToken)
     {
-        // 1. Verify Property belongs to Organization
         var property = await propertyRepository.GetByIdAsync(request.PropertyId, request.OrganizationId, cancellationToken);
         if (property is null || property.OrganizationId != request.OrganizationId)
         {
@@ -40,7 +39,6 @@ public sealed class CreateDraftLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        // 2. Verify Unit belongs to Organization and Property
         var unit = await unitRepository.GetByIdAsync(request.UnitId, request.OrganizationId, cancellationToken);
         if (unit is null || unit.OrganizationId != request.OrganizationId || unit.PropertyId != request.PropertyId)
         {
@@ -58,7 +56,6 @@ public sealed class CreateDraftLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
-        // 3. Verify Resident if provided
         if (request.PrimaryResidentId.HasValue && request.PrimaryResidentId.Value != Guid.Empty)
         {
             var resident = await residentRepository.GetByIdAsync(request.PrimaryResidentId.Value, request.OrganizationId, cancellationToken);
@@ -70,7 +67,15 @@ public sealed class CreateDraftLeaseCommandHandler(
                     Type: ErrorType.NotFound));
             }
 
-            if (resident.Status != ResidentStatus.Active)
+            if (resident.Status == ResidentStatus.Blacklisted)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Resident.Blacklisted",
+                    Message: "Cannot assign a blacklisted resident to a lease.",
+                    Type: ErrorType.Validation));
+            }
+
+            if (!resident.IsEligibleForLease)
             {
                 return Result<LeaseResponse>.Failure(new Error(
                     Code: "Resident.NotActive",
@@ -79,7 +84,6 @@ public sealed class CreateDraftLeaseCommandHandler(
             }
         }
 
-        // 4. Construct Lease Aggregate
         var terms = new LeaseFinancialTerms(
             request.RentAmount,
             request.SecurityDeposit,
@@ -89,7 +93,6 @@ public sealed class CreateDraftLeaseCommandHandler(
             request.LateFeePercentage);
 
         var utcNow = clock.UtcNow;
-
         var lease = Lease.CreateDraft(
             organizationId: request.OrganizationId,
             propertyId: request.PropertyId,
@@ -104,7 +107,6 @@ public sealed class CreateDraftLeaseCommandHandler(
             lease.AddResident(request.PrimaryResidentId.Value, LeaseResidentRole.PrimaryTenant, utcNow);
         }
 
-        // 5. Acquire Serializable transaction + Unit UPDLOCK before overlap check and insert
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(request.UnitId, request.OrganizationId, cancellationToken);
 

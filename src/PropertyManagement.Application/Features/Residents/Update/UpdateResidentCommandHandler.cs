@@ -38,6 +38,14 @@ public sealed class UpdateResidentCommandHandler(
                 Type: ErrorType.Validation));
         }
 
+        if (resident.Status == ResidentStatus.Blacklisted)
+        {
+            return Result<ResidentResponse>.Failure(new Error(
+                Code: "Resident.Blacklisted",
+                Message: "Cannot update a blacklisted resident.",
+                Type: ErrorType.Validation));
+        }
+
         if (!string.IsNullOrWhiteSpace(request.RowVersion))
         {
             try
@@ -62,7 +70,9 @@ public sealed class UpdateResidentCommandHandler(
             middleName: request.MiddleName,
             preferredName: request.PreferredName,
             email: request.Email,
-            alternatePhone: request.AlternatePhone);
+            alternatePhone: request.AlternatePhone,
+            nationalIdOrPassport: request.NationalIdOrPassport ?? resident.NationalIdOrPassport,
+            notes: request.Notes ?? resident.Notes);
 
         await residentRepository.SaveChangesAsync(cancellationToken);
 

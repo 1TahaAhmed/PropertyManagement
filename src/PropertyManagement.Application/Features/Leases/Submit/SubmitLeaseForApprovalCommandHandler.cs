@@ -23,6 +23,21 @@ public sealed class SubmitLeaseForApprovalCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
+        if (!string.IsNullOrWhiteSpace(request.RowVersion))
+        {
+            try
+            {
+                leaseRepository.SetRowVersion(lease, Convert.FromBase64String(request.RowVersion));
+            }
+            catch (FormatException)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Lease.InvalidRowVersion",
+                    Message: "The provided RowVersion concurrency token is invalid.",
+                    Type: ErrorType.Validation));
+            }
+        }
+
         try
         {
             lease.SubmitForApproval(clock.UtcNow);
@@ -36,7 +51,6 @@ public sealed class SubmitLeaseForApprovalCommandHandler(
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
         return Result<LeaseResponse>.Success(LeaseResponse.FromEntity(lease));
     }
 }

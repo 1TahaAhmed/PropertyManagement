@@ -33,10 +33,24 @@ public sealed class ApproveLeaseCommandHandler(
                 Type: ErrorType.Validation));
         }
 
+        if (!string.IsNullOrWhiteSpace(request.RowVersion))
+        {
+            try
+            {
+                leaseRepository.SetRowVersion(lease, Convert.FromBase64String(request.RowVersion));
+            }
+            catch (FormatException)
+            {
+                return Result<LeaseResponse>.Failure(new Error(
+                    Code: "Lease.InvalidRowVersion",
+                    Message: "The provided RowVersion concurrency token is invalid.",
+                    Type: ErrorType.Validation));
+            }
+        }
+
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(lease.UnitId, request.OrganizationId, cancellationToken);
 
-        // Re-verify no overlapping active lease before activation under Serializable + Unit UPDLOCK
         var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
             lease.UnitId,
             request.OrganizationId,
@@ -54,7 +68,6 @@ public sealed class ApproveLeaseCommandHandler(
         }
 
         var utcNow = clock.UtcNow;
-
         try
         {
             lease.Approve(utcNow);

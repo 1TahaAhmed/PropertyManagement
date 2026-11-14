@@ -2,7 +2,6 @@ using PropertyManagement.Application.Abstractions.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PropertyManagement.Application.Abstractions.Residents;
-using PropertyManagement.Application.Abstractions.Tenants;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -18,7 +17,9 @@ using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Security;
+using PropertyManagement.Application.Abstractions.Events;
 using PropertyManagement.Infrastructure.Common.Security;
+using PropertyManagement.Infrastructure.Events;
 using PropertyManagement.Infrastructure.Common.Time;
 using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
@@ -107,7 +108,7 @@ namespace PropertyManagement.Infrastructure
                     ValidateAudience = true,
                     ValidAudience = audience,
                     ValidateLifetime = true,
-                    ClockSkew = TimeSpan.FromMinutes(5)
+                    ClockSkew = TimeSpan.FromSeconds(30)
                 };
 
                 options.Events = new JwtBearerEvents
@@ -222,11 +223,11 @@ namespace PropertyManagement.Infrastructure
 
             services.AddSingleton<
                 IVerificationCodeProtector,
-                DataProtectionVerificationCodeProtector>();
+                HmacVerificationCodeProtector>();
 
             services.AddScoped<IPropertyRepository, PropertyRepository>();
             services.AddScoped<IResidentRepository, ResidentRepository>();
-            services.AddScoped<ITenantRepository, TenantRepository>();
+            services.AddScoped<IDomainEventDispatcher, MediatRDomainEventDispatcher>();
             services.AddScoped<IUnitRepository, UnitRepository>();
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<ILeaseRepository, LeaseRepository>();

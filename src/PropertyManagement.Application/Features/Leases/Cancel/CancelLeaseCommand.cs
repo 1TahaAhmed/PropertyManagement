@@ -6,4 +6,5 @@ namespace PropertyManagement.Application.Features.Leases.Cancel;
 
 public sealed record CancelLeaseCommand(
     Guid OrganizationId,
-    Guid LeaseId) : IRequest<Result<LeaseResponse>>;
+    Guid LeaseId,
+    string? RowVersion = null) : IRequest<Result<LeaseResponse>>;

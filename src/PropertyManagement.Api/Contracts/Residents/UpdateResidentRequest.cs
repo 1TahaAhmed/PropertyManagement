@@ -8,4 +8,6 @@ public sealed record UpdateResidentRequest(
     string? PreferredName = null,
     string? Email = null,
     string? AlternatePhone = null,
-    string? RowVersion = null);
+    string? RowVersion = null,
+    string? NationalIdOrPassport = null,
+    string? Notes = null);

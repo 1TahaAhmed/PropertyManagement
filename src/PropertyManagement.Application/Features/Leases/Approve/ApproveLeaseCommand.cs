@@ -6,4 +6,5 @@ namespace PropertyManagement.Application.Features.Leases.Approve;
 
 public sealed record ApproveLeaseCommand(
     Guid OrganizationId,
-    Guid LeaseId) : IRequest<Result<LeaseResponse>>;
+    Guid LeaseId,
+    string? RowVersion = null) : IRequest<Result<LeaseResponse>>;

@@ -43,7 +43,15 @@ public sealed class AddResidentToLeaseCommandHandler(
                 Type: ErrorType.NotFound));
         }
 
-        if (resident.Status != ResidentStatus.Active)
+        if (resident.Status == ResidentStatus.Blacklisted)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Resident.Blacklisted",
+                Message: "Cannot assign a blacklisted resident to a lease.",
+                Type: ErrorType.Validation));
+        }
+
+        if (!resident.IsEligibleForLease)
         {
             return Result<LeaseResponse>.Failure(new Error(
                 Code: "Resident.NotActive",

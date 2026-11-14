@@ -1,6 +1,3 @@
-using PropertyManagement.Application.Features.Leases.Cancel;
-using PropertyManagement.Application.Features.Leases.GetPaged;
-using PropertyManagement.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -11,12 +8,18 @@ using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Application.Common.Security;
 using PropertyManagement.Application.Features.Leases.AddResident;
 using PropertyManagement.Application.Features.Leases.Approve;
+using PropertyManagement.Application.Features.Leases.Cancel;
+using PropertyManagement.Application.Features.Leases.ChangeResidentRole;
 using PropertyManagement.Application.Features.Leases.CreateDraft;
 using PropertyManagement.Application.Features.Leases.GetById;
+using PropertyManagement.Application.Features.Leases.GetPaged;
+using PropertyManagement.Application.Features.Leases.RemoveResident;
 using PropertyManagement.Application.Features.Leases.Renew;
 using PropertyManagement.Application.Features.Leases.Responses;
 using PropertyManagement.Application.Features.Leases.Submit;
 using PropertyManagement.Application.Features.Leases.Terminate;
+using PropertyManagement.Application.Features.Leases.UpdateDraft;
+using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Api.Controllers;
 
@@ -73,6 +76,51 @@ public sealed class LeasesController(
         return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 
+    [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Leases.Update)]
+    [ProducesResponseType(typeof(LeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateDraft(
+        [FromRoute] Guid id,
+        [FromBody] UpdateDraftLeaseRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var command = new UpdateDraftLeaseCommand(
+            OrganizationId: CurrentOrgId.Value,
+            LeaseId: id,
+            StartDate: request.StartDate,
+            EndDate: request.EndDate,
+            RentAmount: request.RentAmount,
+            SecurityDeposit: request.SecurityDeposit,
+            Frequency: request.Frequency,
+            DueDayOfMonth: request.DueDayOfMonth,
+            GracePeriodDays: request.GracePeriodDays,
+            LateFeePercentage: request.LateFeePercentage,
+            RowVersion: request.RowVersion);
+
+        var result = await sender.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
     [HttpGet("{id:guid}")]
     [HasPermission(Permissions.Leases.Read)]
     [ProducesResponseType(typeof(LeaseResponse), StatusCodes.Status200OK)]
@@ -95,7 +143,6 @@ public sealed class LeasesController(
 
         var query = new GetLeaseByIdQuery(CurrentOrgId.Value, id);
         var result = await sender.Send(query, cancellationToken);
-        
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -111,9 +158,9 @@ public sealed class LeasesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPaged(
-        [FromQuery] Guid? propertyId,
-        [FromQuery] Guid? unitId,
-        [FromQuery] LeaseStatus? status,
+        [FromQuery] Guid? propertyId = null,
+        [FromQuery] Guid? unitId = null,
+        [FromQuery] LeaseStatus? status = null,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken cancellationToken = default)
@@ -130,7 +177,6 @@ public sealed class LeasesController(
 
         var query = new GetLeasesPagedQuery(CurrentOrgId.Value, propertyId, unitId, status, pageNumber, pageSize);
         var result = await sender.Send(query, cancellationToken);
-
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -146,9 +192,11 @@ public sealed class LeasesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Cancel(
         [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+        [FromBody] LeaseConcurrencyRequest? request = null,
+        CancellationToken cancellationToken = default)
     {
         if (!CurrentOrgId.HasValue)
         {
@@ -160,9 +208,8 @@ public sealed class LeasesController(
             });
         }
 
-        var command = new CancelLeaseCommand(CurrentOrgId.Value, id);
+        var command = new CancelLeaseCommand(CurrentOrgId.Value, id, request?.RowVersion);
         var result = await sender.Send(command, cancellationToken);
-
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -195,7 +242,71 @@ public sealed class LeasesController(
 
         var command = new AddResidentToLeaseCommand(CurrentOrgId.Value, id, request.ResidentId, request.Role);
         var result = await sender.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
 
+        return Ok(result.Value);
+    }
+
+    [HttpPut("{id:guid}/residents/{residentId:guid}/role")]
+    [HasPermission(Permissions.Leases.Update)]
+    [ProducesResponseType(typeof(LeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeResidentRole(
+        [FromRoute] Guid id,
+        [FromRoute] Guid residentId,
+        [FromBody] ChangeLeaseResidentRoleRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var command = new ChangeLeaseResidentRoleCommand(CurrentOrgId.Value, id, residentId, request.Role);
+        var result = await sender.Send(command, cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpDelete("{id:guid}/residents/{residentId:guid}")]
+    [HasPermission(Permissions.Leases.Update)]
+    [ProducesResponseType(typeof(LeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveResident(
+        [FromRoute] Guid id,
+        [FromRoute] Guid residentId,
+        CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var command = new RemoveResidentFromLeaseCommand(CurrentOrgId.Value, id, residentId);
+        var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -211,9 +322,11 @@ public sealed class LeasesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SubmitForApproval(
         [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+        [FromBody] LeaseConcurrencyRequest? request = null,
+        CancellationToken cancellationToken = default)
     {
         if (!CurrentOrgId.HasValue)
         {
@@ -225,9 +338,8 @@ public sealed class LeasesController(
             });
         }
 
-        var command = new SubmitLeaseForApprovalCommand(CurrentOrgId.Value, id);
+        var command = new SubmitLeaseForApprovalCommand(CurrentOrgId.Value, id, request?.RowVersion);
         var result = await sender.Send(command, cancellationToken);
-
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -246,7 +358,8 @@ public sealed class LeasesController(
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Approve(
         [FromRoute] Guid id,
-        CancellationToken cancellationToken)
+        [FromBody] LeaseConcurrencyRequest? request = null,
+        CancellationToken cancellationToken = default)
     {
         if (!CurrentOrgId.HasValue)
         {
@@ -258,9 +371,8 @@ public sealed class LeasesController(
             });
         }
 
-        var command = new ApproveLeaseCommand(CurrentOrgId.Value, id);
+        var command = new ApproveLeaseCommand(CurrentOrgId.Value, id, request?.RowVersion);
         var result = await sender.Send(command, cancellationToken);
-
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -276,6 +388,7 @@ public sealed class LeasesController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Terminate(
         [FromRoute] Guid id,
         [FromBody] TerminateLeaseRequest request,
@@ -308,7 +421,8 @@ public sealed class LeasesController(
             TerminationDate: request.TerminationDate,
             Reason: request.Reason,
             TerminatedByUserId: userId,
-            Notes: request.Notes);
+            Notes: request.Notes,
+            RowVersion: request.RowVersion);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)

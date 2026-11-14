@@ -1,6 +1,7 @@
 using PropertyManagement.Domain.Common;
+using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Entities.Properties;
-using PropertyManagement.Domain.Entities.Tenants;
+using PropertyManagement.Domain.Entities.Residents;
 using PropertyManagement.Domain.Enums;
 using Xunit;
 
@@ -40,18 +41,36 @@ public class TenantIsolationTests
     }
 
     [Fact]
-    public void Tenant_ShouldImplement_IOrganizationScoped()
+    public void Resident_ShouldImplement_IOrganizationScoped()
     {
         var orgId = Guid.NewGuid();
-        var tenant = Tenant.Create(
+        var resident = Resident.Create(
             orgId,
             "Mohamed",
             "Ali",
-            "m.ali@example.com",
             "01012345678",
+            DateTime.UtcNow,
+            email: "m.ali@example.com",
+            nationalIdOrPassport: "29901011234567");
+
+        Assert.IsAssignableFrom<IOrganizationScoped>(resident);
+        Assert.Equal(orgId, resident.OrganizationId);
+    }
+
+    [Fact]
+    public void Lease_ShouldImplement_IOrganizationScoped()
+    {
+        var orgId = Guid.NewGuid();
+        var lease = Lease.CreateDraft(
+            orgId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 12, 31),
+            new LeaseFinancialTerms(10000m, 20000m),
             DateTime.UtcNow);
 
-        Assert.IsAssignableFrom<IOrganizationScoped>(tenant);
-        Assert.Equal(orgId, tenant.OrganizationId);
+        Assert.IsAssignableFrom<IOrganizationScoped>(lease);
+        Assert.Equal(orgId, lease.OrganizationId);
     }
 }

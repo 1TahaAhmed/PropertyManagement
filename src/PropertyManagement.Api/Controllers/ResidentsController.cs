@@ -13,6 +13,7 @@ using PropertyManagement.Application.Features.Residents.EmergencyContacts;
 using PropertyManagement.Application.Features.Residents.GetById;
 using PropertyManagement.Application.Features.Residents.GetResidents;
 using PropertyManagement.Application.Features.Residents.Responses;
+using PropertyManagement.Application.Features.Residents.Status;
 using PropertyManagement.Application.Features.Residents.Update;
 using PropertyManagement.Domain.Enums;
 
@@ -55,7 +56,9 @@ public sealed class ResidentsController(
             MiddleName: request.MiddleName,
             PreferredName: request.PreferredName,
             Email: request.Email,
-            AlternatePhone: request.AlternatePhone);
+            AlternatePhone: request.AlternatePhone,
+            NationalIdOrPassport: request.NationalIdOrPassport,
+            Notes: request.Notes);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -63,7 +66,7 @@ public sealed class ResidentsController(
             return this.ToActionResult(result);
         }
 
-        return StatusCode(StatusCodes.Status201Created, result.Value);
+        return CreatedAtAction(nameof(GetById), new { id = result.Value.Id }, result.Value);
     }
 
     [HttpGet("{id:guid}")]
@@ -72,9 +75,7 @@ public sealed class ResidentsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetById(
-        Guid id,
-        CancellationToken cancellationToken)
+    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
     {
         if (!CurrentOrgId.HasValue)
         {
@@ -86,8 +87,7 @@ public sealed class ResidentsController(
             });
         }
 
-        var query = new GetResidentByIdQuery(id, CurrentOrgId.Value);
-        var result = await sender.Send(query, cancellationToken);
+        var result = await sender.Send(new GetResidentByIdQuery(id, CurrentOrgId.Value), cancellationToken);
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -102,9 +102,11 @@ public sealed class ResidentsController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GetPaged(
+    public async Task<IActionResult> GetAll(
         [FromQuery] string? searchTerm,
         [FromQuery] ResidentStatus? status,
+        [FromQuery] LeaseResidentRole? leaseRole = null,
+        [FromQuery] bool onlyLeaseHolders = false,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         CancellationToken cancellationToken = default)
@@ -124,7 +126,9 @@ public sealed class ResidentsController(
             searchTerm,
             status,
             pageNumber,
-            pageSize);
+            pageSize,
+            leaseRole,
+            onlyLeaseHolders);
 
         var result = await sender.Send(query, cancellationToken);
         if (result.IsFailure)
@@ -168,7 +172,9 @@ public sealed class ResidentsController(
             PreferredName: request.PreferredName,
             Email: request.Email,
             AlternatePhone: request.AlternatePhone,
-            RowVersion: request.RowVersion);
+            RowVersion: request.RowVersion,
+            NationalIdOrPassport: request.NationalIdOrPassport,
+            Notes: request.Notes);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -177,6 +183,96 @@ public sealed class ResidentsController(
         }
 
         return Ok(result.Value);
+    }
+
+    [HttpPost("{id:guid}/activate")]
+    [HasPermission(Permissions.Residents.Deactivate)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Activate(Guid id, CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var result = await sender.Send(new ActivateResidentCommand(id, CurrentOrgId.Value), cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new { message = "Resident activated successfully." });
+    }
+
+    [HttpPost("{id:guid}/deactivate")]
+    [HasPermission(Permissions.Residents.Deactivate)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Deactivate(Guid id, CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var result = await sender.Send(new DeactivateResidentCommand(id, CurrentOrgId.Value), cancellationToken);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new { message = "Resident deactivated successfully." });
+    }
+
+    [HttpPost("{id:guid}/blacklist")]
+    [HasPermission(Permissions.Residents.Blacklist)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Blacklist(
+        Guid id,
+        [FromBody] BlacklistResidentRequest? request,
+        CancellationToken cancellationToken)
+    {
+        if (!CurrentOrgId.HasValue)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = StatusCodes.Status401Unauthorized,
+                Title = "Unauthorized",
+                Detail = "An active organization context is required."
+            });
+        }
+
+        var result = await sender.Send(
+            new BlacklistResidentCommand(id, CurrentOrgId.Value, request?.Reason ?? string.Empty),
+            cancellationToken);
+
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Ok(new { message = "Resident blacklisted successfully." });
     }
 
     [HttpPost("{id:guid}/archive")]
@@ -201,6 +297,7 @@ public sealed class ResidentsController(
 
         var command = new ArchiveResidentCommand(id, CurrentOrgId.Value);
         var result = await sender.Send(command, cancellationToken);
+
         if (result.IsFailure)
         {
             return this.ToActionResult(result);
@@ -271,6 +368,7 @@ public sealed class ResidentsController(
 
         var query = new GetEmergencyContactsQuery(residentId, CurrentOrgId.Value);
         var result = await sender.Send(query, cancellationToken);
+
         if (result.IsFailure)
         {
             return this.ToActionResult(result);

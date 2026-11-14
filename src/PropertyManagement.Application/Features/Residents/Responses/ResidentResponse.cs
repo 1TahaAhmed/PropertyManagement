@@ -14,6 +14,8 @@ public sealed record ResidentResponse(
     string? Email,
     string Phone,
     string? AlternatePhone,
+    string NationalIdOrPassport,
+    string Notes,
     ResidentStatus Status,
     Guid? UserId,
     IReadOnlyList<EmergencyContactResponse> EmergencyContacts,

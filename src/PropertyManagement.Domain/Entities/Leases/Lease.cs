@@ -1,11 +1,13 @@
 using PropertyManagement.Domain.Common;
+using PropertyManagement.Domain.Entities.Leases.Events;
 using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Leases;
 
-public sealed class Lease : IOrganizationScoped
+public sealed class Lease : IOrganizationScoped, IHasDomainEvents
 {
     private readonly List<LeaseResident> _residents = [];
+    private readonly List<IDomainEvent> _domainEvents = [];
 
     private Lease() { }
 
@@ -16,22 +18,22 @@ public sealed class Lease : IOrganizationScoped
     public DateOnly StartDate { get; private set; }
     public DateOnly EndDate { get; private set; }
     public LeaseStatus Status { get; private set; }
-
     public decimal RentAmount { get; private set; }
     public decimal SecurityDeposit { get; private set; }
     public RentFrequency Frequency { get; private set; }
     public int DueDayOfMonth { get; private set; }
     public int GracePeriodDays { get; private set; }
     public decimal LateFeePercentage { get; private set; }
-
     public Guid? ParentLeaseId { get; private set; }
     public LeaseTerminationDetails? TerminationDetails { get; private set; }
-
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
     public byte[] RowVersion { get; private set; } = [];
 
     public IReadOnlyCollection<LeaseResident> Residents => _residents.AsReadOnly();
+    public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();
+
+    public void ClearDomainEvents() => _domainEvents.Clear();
 
     public LeaseDateRange DateRange => new(StartDate, EndDate);
 
@@ -60,7 +62,7 @@ public sealed class Lease : IOrganizationScoped
 
         var dateRange = new LeaseDateRange(startDate, endDate);
 
-        return new Lease
+        var lease = new Lease
         {
             Id = Guid.NewGuid(),
             OrganizationId = organizationId,
@@ -78,6 +80,9 @@ public sealed class Lease : IOrganizationScoped
             ParentLeaseId = parentLeaseId == Guid.Empty ? null : parentLeaseId,
             CreatedAtUtc = utcNow
         };
+
+        lease._domainEvents.Add(new LeaseCreatedEvent(lease.Id, organizationId, propertyId, unitId));
+        return lease;
     }
 
     public void UpdateDraftTerms(
@@ -123,7 +128,30 @@ public sealed class Lease : IOrganizationScoped
         var leaseResident = LeaseResident.Create(OrganizationId, Id, residentId, role, utcNow);
         _residents.Add(leaseResident);
         UpdatedAtUtc = utcNow;
+
         return leaseResident;
+    }
+
+    public void ChangeResidentRole(Guid residentId, LeaseResidentRole newRole, DateTime utcNow)
+    {
+        EnsureInState(LeaseStatus.Draft, "change resident role on");
+
+        var resident = _residents.FirstOrDefault(r => r.ResidentId == residentId)
+            ?? throw new InvalidOperationException($"Resident '{residentId}' was not found on this lease.");
+
+        if (resident.Role == newRole)
+        {
+            return;
+        }
+
+        if (newRole == LeaseResidentRole.PrimaryTenant &&
+            _residents.Any(r => r.ResidentId != residentId && r.Role == LeaseResidentRole.PrimaryTenant))
+        {
+            throw new InvalidOperationException("A lease can have only one Primary Tenant. Demote the existing Primary Tenant first.");
+        }
+
+        resident.ChangeRole(newRole);
+        UpdatedAtUtc = utcNow;
     }
 
     public void RemoveResident(Guid residentId, DateTime utcNow)
@@ -148,6 +176,7 @@ public sealed class Lease : IOrganizationScoped
 
         Status = LeaseStatus.PendingApproval;
         UpdatedAtUtc = utcNow;
+        _domainEvents.Add(new LeaseSubmittedEvent(Id, OrganizationId));
     }
 
     public void Approve(DateTime utcNow)
@@ -156,6 +185,7 @@ public sealed class Lease : IOrganizationScoped
 
         Status = LeaseStatus.Active;
         UpdatedAtUtc = utcNow;
+        _domainEvents.Add(new LeaseApprovedEvent(Id, OrganizationId, UnitId));
     }
 
     public void Terminate(
@@ -186,6 +216,7 @@ public sealed class Lease : IOrganizationScoped
 
         Status = LeaseStatus.Terminated;
         UpdatedAtUtc = utcNow;
+        _domainEvents.Add(new LeaseTerminatedEvent(Id, OrganizationId, UnitId, terminationDate, reason));
     }
 
     public void Cancel(DateTime utcNow)
@@ -197,6 +228,7 @@ public sealed class Lease : IOrganizationScoped
 
         Status = LeaseStatus.Cancelled;
         UpdatedAtUtc = utcNow;
+        _domainEvents.Add(new LeaseCancelledEvent(Id, OrganizationId, UnitId));
     }
 
     public void Expire(DateTime utcNow)
@@ -224,6 +256,7 @@ public sealed class Lease : IOrganizationScoped
         }
 
         var renewalTerms = newTerms ?? FinancialTerms;
+
         var newLease = CreateDraft(
             organizationId: OrganizationId,
             propertyId: PropertyId,
@@ -239,6 +272,7 @@ public sealed class Lease : IOrganizationScoped
             newLease.AddResident(resident.ResidentId, resident.Role, utcNow);
         }
 
+        _domainEvents.Add(new LeaseRenewedEvent(Id, newLease.Id, OrganizationId));
         return newLease;
     }
 

@@ -12,6 +12,7 @@ public sealed class RefreshToken
     public DateTime? RevokedAtUtc { get; private set; }
     public string? ReplacedByTokenHash { get; private set; }
     public Guid? OrganizationId { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     public bool IsExpired(DateTime utcNow) => utcNow >= ExpiresAtUtc;
     public bool IsRevoked => RevokedAtUtc.HasValue;

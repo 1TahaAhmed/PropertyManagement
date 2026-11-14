@@ -121,6 +121,11 @@ public sealed class LeaseRepository(ApplicationDbContext context) : ILeaseReposi
         await context.Leases.AddAsync(lease, cancellationToken);
     }
 
+    public void SetRowVersion(Lease lease, byte[] rowVersion)
+    {
+        context.Entry(lease).Property(l => l.RowVersion).OriginalValue = rowVersion;
+    }
+
     public void Update(Lease lease)
     {
         if (context.Entry(lease).State == EntityState.Detached)

@@ -12,6 +12,7 @@ public sealed class ResidentConfiguration : IEntityTypeConfiguration<Resident>
         builder.ToTable("Residents");
 
         builder.HasKey(r => r.Id);
+
         builder.Property(r => r.Id)
             .ValueGeneratedNever();
 
@@ -42,6 +43,14 @@ public sealed class ResidentConfiguration : IEntityTypeConfiguration<Resident>
         builder.Property(r => r.Email)
             .HasMaxLength(256);
 
+        builder.Property(r => r.NationalIdOrPassport)
+            .HasMaxLength(50)
+            .IsRequired();
+
+        builder.Property(r => r.Notes)
+            .HasMaxLength(2000)
+            .IsRequired();
+
         builder.Property(r => r.Status)
             .HasConversion<int>()
             .IsRequired();
@@ -67,6 +76,7 @@ public sealed class ResidentConfiguration : IEntityTypeConfiguration<Resident>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(r => r.OrganizationId);
+        builder.HasIndex(r => new { r.OrganizationId, r.Status });
         builder.HasIndex(r => new { r.OrganizationId, r.LastName, r.FirstName });
         builder.HasIndex(r => new { r.OrganizationId, r.Phone });
         builder.HasIndex(r => new { r.OrganizationId, r.Email });

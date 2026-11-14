@@ -7,4 +7,6 @@ public sealed record CreateResidentRequest(
     string? MiddleName = null,
     string? PreferredName = null,
     string? Email = null,
-    string? AlternatePhone = null);
+    string? AlternatePhone = null,
+    string? NationalIdOrPassport = null,
+    string? Notes = null);

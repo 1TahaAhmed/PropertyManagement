@@ -10,4 +10,5 @@ public sealed record TerminateLeaseCommand(
     DateOnly TerminationDate,
     string Reason,
     Guid TerminatedByUserId,
-    string? Notes = null) : IRequest<Result<LeaseResponse>>;
+    string? Notes = null,
+    string? RowVersion = null) : IRequest<Result<LeaseResponse>>;

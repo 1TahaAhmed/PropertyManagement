@@ -20,7 +20,9 @@ public sealed class GetResidentsQueryHandler(
             request.Status,
             request.PageNumber,
             request.PageSize,
-            cancellationToken);
+            cancellationToken,
+            request.LeaseRole,
+            request.OnlyLeaseHolders);
 
         var responseItems = items.Select(r => r.ToSummaryResponse()).ToList();
 
