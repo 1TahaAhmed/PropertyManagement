@@ -1,4 +1,5 @@
 using PropertyManagement.Domain.Common;
+using PropertyManagement.Domain.Entities.Billing;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Domain.Entities.Residents;
@@ -72,5 +73,24 @@ public class TenantIsolationTests
 
         Assert.IsAssignableFrom<IOrganizationScoped>(lease);
         Assert.Equal(orgId, lease.OrganizationId);
+    }
+
+    [Fact]
+    public void Invoice_And_Charge_ShouldImplement_IOrganizationScoped()
+    {
+        var orgId = Guid.NewGuid();
+        var utcNow = DateTime.UtcNow;
+
+        var charge = Charge.Create(
+            orgId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            ChargeType.Parking, "Parking", 1m, 300m, "USD", utcNow);
+        var invoice = Invoice.CreateDraft(
+            orgId, Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(),
+            BillingPeriod.ForMonth(2026, 3), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 5), "USD", utcNow);
+
+        Assert.IsAssignableFrom<IOrganizationScoped>(charge);
+        Assert.Equal(orgId, charge.OrganizationId);
+        Assert.IsAssignableFrom<IOrganizationScoped>(invoice);
+        Assert.Equal(orgId, invoice.OrganizationId);
     }
 }

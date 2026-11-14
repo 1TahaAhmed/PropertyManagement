@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Entities.Properties;
 
@@ -60,6 +61,11 @@ public sealed class LeaseConfiguration : IEntityTypeConfiguration<Lease>
 
         builder.Property(l => l.LateFeePercentage)
             .HasPrecision(5, 2)
+            .IsRequired();
+
+        builder.Property(l => l.Currency)
+            .HasMaxLength(3)
+            .HasDefaultValue(CurrencyCode.Default)
             .IsRequired();
 
         builder.Property(l => l.CreatedAtUtc)

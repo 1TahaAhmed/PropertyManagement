@@ -24,6 +24,7 @@ public sealed class Lease : IOrganizationScoped, IHasDomainEvents
     public int DueDayOfMonth { get; private set; }
     public int GracePeriodDays { get; private set; }
     public decimal LateFeePercentage { get; private set; }
+    public string Currency { get; private set; } = CurrencyCode.Default;
     public Guid? ParentLeaseId { get; private set; }
     public LeaseTerminationDetails? TerminationDetails { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -43,7 +44,8 @@ public sealed class Lease : IOrganizationScoped, IHasDomainEvents
         Frequency,
         DueDayOfMonth,
         GracePeriodDays,
-        LateFeePercentage);
+        LateFeePercentage,
+        Currency);
 
     public static Lease CreateDraft(
         Guid organizationId,
@@ -77,6 +79,7 @@ public sealed class Lease : IOrganizationScoped, IHasDomainEvents
             DueDayOfMonth = terms.DueDayOfMonth,
             GracePeriodDays = terms.GracePeriodDays,
             LateFeePercentage = terms.LateFeePercentage,
+            Currency = terms.Currency,
             ParentLeaseId = parentLeaseId == Guid.Empty ? null : parentLeaseId,
             CreatedAtUtc = utcNow
         };
@@ -104,6 +107,7 @@ public sealed class Lease : IOrganizationScoped, IHasDomainEvents
         DueDayOfMonth = terms.DueDayOfMonth;
         GracePeriodDays = terms.GracePeriodDays;
         LateFeePercentage = terms.LateFeePercentage;
+        Currency = terms.Currency;
         UpdatedAtUtc = utcNow;
     }
 

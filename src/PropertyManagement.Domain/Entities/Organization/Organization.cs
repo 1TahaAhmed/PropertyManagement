@@ -1,4 +1,5 @@
 ﻿using System.Text.RegularExpressions;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Organizations;
@@ -11,10 +12,11 @@ public sealed class Organization
     public string Name { get; private set; } = string.Empty;
     public string Identifier { get; private set; } = string.Empty;
     public OrganizationStatus Status { get; private set; }
+    public string DefaultCurrency { get; private set; } = CurrencyCode.Default;
     public DateTime CreatedAt { get; private set; }
     public DateTime? UpdatedAt { get; private set; }
 
-    public static Organization Create(string name, DateTime utcNow, string? customSlug = null)
+    public static Organization Create(string name, DateTime utcNow, string? customSlug = null, string defaultCurrency = CurrencyCode.Default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name, nameof(name));
 
@@ -34,8 +36,15 @@ public sealed class Organization
             Name = trimmedName,
             Identifier = slug,
             Status = OrganizationStatus.Active,
+            DefaultCurrency = CurrencyCode.Normalize(defaultCurrency),
             CreatedAt = utcNow
         };
+    }
+
+    public void UpdateDefaultCurrency(string currencyCode, DateTime utcNow)
+    {
+        DefaultCurrency = CurrencyCode.Normalize(currencyCode);
+        UpdatedAt = utcNow;
     }
 
     public void UpdateName(string name, DateTime utcNow)

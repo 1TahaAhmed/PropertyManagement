@@ -1,3 +1,4 @@
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Domain.Entities.Leases;
@@ -10,6 +11,7 @@ public sealed record LeaseFinancialTerms
     public int DueDayOfMonth { get; init; }
     public int GracePeriodDays { get; init; }
     public decimal LateFeePercentage { get; init; }
+    public string Currency { get; init; } = CurrencyCode.Default;
 
     public LeaseFinancialTerms(
         decimal rentAmount,
@@ -17,7 +19,8 @@ public sealed record LeaseFinancialTerms
         RentFrequency frequency = RentFrequency.Monthly,
         int dueDayOfMonth = 1,
         int gracePeriodDays = 5,
-        decimal lateFeePercentage = 0m)
+        decimal lateFeePercentage = 0m,
+        string currency = CurrencyCode.Default)
     {
         if (rentAmount <= 0)
         {
@@ -50,5 +53,6 @@ public sealed record LeaseFinancialTerms
         DueDayOfMonth = dueDayOfMonth;
         GracePeriodDays = gracePeriodDays;
         LateFeePercentage = lateFeePercentage;
+        Currency = CurrencyCode.Normalize(currency);
     }
 }

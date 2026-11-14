@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Organizations;
 
 namespace PropertyManagement.Infrastructure.Persistence.Configurations;
@@ -23,6 +24,11 @@ public sealed class OrganizationConfiguration : IEntityTypeConfiguration<Organiz
 
         builder.Property(o => o.Status)
             .HasConversion<int>()
+            .IsRequired();
+
+        builder.Property(o => o.DefaultCurrency)
+            .HasMaxLength(3)
+            .HasDefaultValue(CurrencyCode.Default)
             .IsRequired();
 
         builder.Property(o => o.CreatedAt).IsRequired();
