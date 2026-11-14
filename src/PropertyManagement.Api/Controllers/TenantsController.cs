@@ -63,6 +63,7 @@ public sealed class TenantsController(
     [HttpGet]
     [HasPermission(Permissions.Tenants.Read)]
     [ProducesResponseType(typeof(PagedList<TenantResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAll(

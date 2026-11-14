@@ -107,6 +107,7 @@ public sealed class LeasesController(
     [HttpGet]
     [HasPermission(Permissions.Leases.Read)]
     [ProducesResponseType(typeof(PagedLeaseResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPaged(
