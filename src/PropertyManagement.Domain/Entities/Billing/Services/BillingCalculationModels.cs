@@ -92,7 +92,8 @@ public sealed record BillingCalculationResult(
         Guid unitId,
         Guid residentId,
         DateTime utcNow,
-        string? notes = null)
+        string? notes = null,
+        string? idempotencyKey = null)
     {
         var invoice = Invoice.CreateDraft(
             organizationId: organizationId,
@@ -105,7 +106,8 @@ public sealed record BillingCalculationResult(
             dueDate: DueDate,
             currency: Currency,
             utcNow: utcNow,
-            notes: notes);
+            notes: notes,
+            idempotencyKey: idempotencyKey);
 
         foreach (var line in Lines)
         {

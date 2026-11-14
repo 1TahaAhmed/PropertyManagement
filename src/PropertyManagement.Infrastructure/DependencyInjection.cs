@@ -1,3 +1,4 @@
+using PropertyManagement.Application.Abstractions.Billing;
 using PropertyManagement.Application.Abstractions.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
 using PropertyManagement.Infrastructure.Persistence.Repositories;
+using PropertyManagement.Infrastructure.Persistence.Repositories.Billing;
 
 namespace PropertyManagement.Infrastructure
 {
@@ -231,6 +233,9 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IUnitRepository, UnitRepository>();
             services.AddScoped<IOrganizationRepository, OrganizationRepository>();
             services.AddScoped<ILeaseRepository, LeaseRepository>();
+            services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+            services.AddScoped<IChargeRepository, ChargeRepository>();
+            services.AddScoped<IInvoiceNumberGenerator, InvoiceNumberGenerator>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
             return services;

@@ -7,7 +7,10 @@ using PropertyManagement.Application.Abstractions.Events;
 using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Authentication;
+using PropertyManagement.Domain.Entities.Billing;
 using PropertyManagement.Domain.Entities.Leases;
+using PropertyManagement.Domain.Enums;
+using PropertyManagement.Infrastructure.Persistence.Entities;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Entities.Properties;
 using PropertyManagement.Domain.Entities.Residents;
@@ -71,6 +74,26 @@ public class ApplicationDbContext :
             lr.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                 ? _currentUser.OrganizationId.Value
                 : Guid.Empty));
+
+        builder.Entity<Invoice>().HasQueryFilter(i =>
+            i.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : Guid.Empty));
+
+        builder.Entity<InvoiceLine>().HasQueryFilter(l =>
+            l.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : Guid.Empty));
+
+        builder.Entity<InvoiceAdjustment>().HasQueryFilter(a =>
+            a.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : Guid.Empty));
+
+        builder.Entity<Charge>().HasQueryFilter(c =>
+            c.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : Guid.Empty));
     }
 
     public DbSet<EmailConfirmationChallenge>
@@ -91,6 +114,11 @@ public class ApplicationDbContext :
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Lease> Leases => Set<Lease>();
     public DbSet<LeaseResident> LeaseResidents => Set<LeaseResident>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<InvoiceLine> InvoiceLines => Set<InvoiceLine>();
+    public DbSet<InvoiceAdjustment> InvoiceAdjustments => Set<InvoiceAdjustment>();
+    public DbSet<Charge> Charges => Set<Charge>();
+    public DbSet<InvoiceNumberSequence> InvoiceNumberSequences => Set<InvoiceNumberSequence>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -141,6 +169,37 @@ public class ApplicationDbContext :
                 if (unauthorizedEntries)
                 {
                     throw new InvalidOperationException("An active tenant context is required for organization-scoped write operations.");
+                }
+            }
+        }
+
+        foreach (var adjustmentEntry in ChangeTracker.Entries<InvoiceAdjustment>())
+        {
+            if (adjustmentEntry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                throw new InvalidOperationException("Invoice adjustments are immutable and cannot be modified or deleted.");
+            }
+        }
+
+        foreach (var lineEntry in ChangeTracker.Entries<InvoiceLine>())
+        {
+            if (lineEntry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                var trackedParent = ChangeTracker.Entries<Invoice>()
+                    .FirstOrDefault(e => e.Entity.Id == lineEntry.Entity.InvoiceId);
+
+                InvoiceStatus? originalParentStatus = trackedParent is not null
+                    ? (InvoiceStatus)trackedParent.Property(nameof(Invoice.Status)).OriginalValue!
+                    : await Invoices
+                        .IgnoreQueryFilters()
+                        .AsNoTracking()
+                        .Where(i => i.Id == lineEntry.Entity.InvoiceId)
+                        .Select(i => (InvoiceStatus?)i.Status)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                if (originalParentStatus.HasValue && originalParentStatus.Value != InvoiceStatus.Draft)
+                {
+                    throw new InvalidOperationException("Invoice lines cannot be modified or deleted after the invoice has been issued.");
                 }
             }
         }

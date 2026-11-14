@@ -19,6 +19,7 @@ public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
     public Guid UnitId { get; private set; }
     public Guid ResidentId { get; private set; }
     public string? InvoiceNumber { get; private set; }
+    public string? IdempotencyKey { get; private set; }
     public DateOnly BillingPeriodStart { get; private set; }
     public DateOnly BillingPeriodEnd { get; private set; }
     public DateOnly IssueDate { get; private set; }
@@ -56,7 +57,8 @@ public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
         DateOnly dueDate,
         string currency,
         DateTime utcNow,
-        string? notes = null)
+        string? notes = null,
+        string? idempotencyKey = null)
     {
         if (organizationId == Guid.Empty) throw new ArgumentException("Organization ID cannot be empty.", nameof(organizationId));
         if (leaseId == Guid.Empty) throw new ArgumentException("Lease ID cannot be empty.", nameof(leaseId));
@@ -86,6 +88,7 @@ public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
             Total = 0m,
             AmountPaid = 0m,
             BalanceDue = 0m,
+            IdempotencyKey = string.IsNullOrWhiteSpace(idempotencyKey) ? null : idempotencyKey.Trim(),
             Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
             CreatedAtUtc = utcNow
         };
