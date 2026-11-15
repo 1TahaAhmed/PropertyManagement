@@ -160,7 +160,6 @@ public sealed class RefreshTokenCommandHandlerTests
         var org1 = Organization.Create("First Org", FixedNow);
         var org2 = Organization.Create("Second Org", FixedNow);
 
-        // Existing token was authenticated for org2
         var activeToken = RefreshToken.Create(
             TestUserId,
             "hashed_plain_token",
@@ -199,7 +198,6 @@ public sealed class RefreshTokenCommandHandlerTests
         Assert.Equal("new_access_token", result.Value.AccessToken);
         Assert.Equal(FixedNow.AddMinutes(15), result.Value.ExpiresAtUtc);
 
-        // New refresh token MUST preserve org2.Id
         await _refreshTokenRepository.Received(1).AddAsync(
             Arg.Is<RefreshToken>(t => t.UserId == TestUserId && t.TokenHash == "new_hashed_token" && t.OrganizationId == org2.Id),
             Arg.Any<CancellationToken>());
