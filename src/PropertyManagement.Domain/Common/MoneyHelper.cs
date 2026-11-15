@@ -4,6 +4,17 @@ public static class CurrencyCode
 {
     public const string Default = "USD";
 
+    public static bool IsValid(string? currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+        {
+            return false;
+        }
+
+        var normalized = currency.Trim();
+        return normalized.Length == 3 && normalized.All(c => c is (>= 'A' and <= 'Z') or (>= 'a' and <= 'z'));
+    }
+
     public static string Normalize(string? currency)
     {
         if (string.IsNullOrWhiteSpace(currency))

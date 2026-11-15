@@ -5,6 +5,7 @@ using PropertyManagement.Application.Abstractions.Identity;
 using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Enums;
 
@@ -66,7 +67,11 @@ public sealed class RegisterCompanyCommandHandler(
             uniqueSlug = $"{baseSlug}-{suffix}";
         }
 
-        var organization = Organization.Create(trimmedCompanyName, utcNow, customSlug: uniqueSlug);
+        var defaultCurrency = string.IsNullOrWhiteSpace(request.DefaultCurrency)
+            ? CurrencyCode.Default
+            : CurrencyCode.Normalize(request.DefaultCurrency);
+
+        var organization = Organization.Create(trimmedCompanyName, utcNow, customSlug: uniqueSlug, defaultCurrency: defaultCurrency);
         var ownerMember = OrganizationMember.Create(
             organization.Id,
             identityUser.UserId,
@@ -113,7 +118,8 @@ public sealed class RegisterCompanyCommandHandler(
             LastName: request.LastName,
             OrganizationId: organization.Id,
             OrganizationName: organization.Name,
-            RequiresEmailConfirmation: true
+            RequiresEmailConfirmation: true,
+            DefaultCurrency: organization.DefaultCurrency
         );
 
         return Result<RegisterCompanyResponse>.Success(response);

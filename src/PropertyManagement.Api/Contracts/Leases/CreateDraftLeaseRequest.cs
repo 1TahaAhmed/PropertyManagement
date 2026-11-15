@@ -13,4 +13,5 @@ public sealed record CreateDraftLeaseRequest(
     int DueDayOfMonth = 1,
     int GracePeriodDays = 5,
     decimal LateFeePercentage = 0m,
-    Guid? PrimaryResidentId = null);
+    Guid? PrimaryResidentId = null,
+    string? Currency = null);

@@ -1,4 +1,5 @@
 using FluentValidation;
+using PropertyManagement.Domain.Common;
 
 namespace PropertyManagement.Application.Features.Leases.CreateDraft;
 
@@ -40,5 +41,10 @@ public sealed class CreateDraftLeaseCommandValidator : AbstractValidator<CreateD
 
         RuleFor(x => x.LateFeePercentage)
             .InclusiveBetween(0m, 100m).WithMessage("Late fee percentage must be between 0 and 100.");
+
+        RuleFor(x => x.Currency)
+            .Must(CurrencyCode.IsValid)
+            .WithMessage("Currency must be a valid 3-letter ISO currency code (e.g., USD, EGP).")
+            .When(x => !string.IsNullOrWhiteSpace(x.Currency));
     }
 }

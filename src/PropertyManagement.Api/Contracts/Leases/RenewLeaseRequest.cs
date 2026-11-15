@@ -9,4 +9,5 @@ public sealed record RenewLeaseRequest(
     RentFrequency? NewFrequency = null,
     int? NewDueDayOfMonth = null,
     int? NewGracePeriodDays = null,
-    decimal? NewLateFeePercentage = null);
+    decimal? NewLateFeePercentage = null,
+    string? NewCurrency = null);

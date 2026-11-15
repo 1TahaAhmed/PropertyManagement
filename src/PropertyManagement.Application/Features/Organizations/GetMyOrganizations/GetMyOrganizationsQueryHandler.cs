@@ -25,7 +25,8 @@ public sealed class GetMyOrganizationsQueryHandler(
                 Status: item.Organization.Status,
                 Roles: item.Roles,
                 IsCurrent: query.CurrentOrganizationId.HasValue
-                    && item.Organization.Id == query.CurrentOrganizationId.Value))
+                    && item.Organization.Id == query.CurrentOrganizationId.Value,
+                DefaultCurrency: item.Organization.DefaultCurrency))
             .ToList();
 
         return Result<IReadOnlyList<UserOrganizationResponse>>.Success(response);

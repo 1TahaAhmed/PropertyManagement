@@ -41,6 +41,29 @@ public static partial class Permissions
         public const string Renew = "Permissions.Leases.Renew";
     }
 
+    public static class Billing
+    {
+        public const string Preview = "Permissions.Billing.Preview";
+        public const string Generate = "Permissions.Billing.Generate";
+    }
+
+    public static class Invoices
+    {
+        public const string Read = "Permissions.Invoices.Read";
+        public const string Create = "Permissions.Invoices.Create";
+        public const string Issue = "Permissions.Invoices.Issue";
+        public const string Void = "Permissions.Invoices.Void";
+        public const string Adjust = "Permissions.Invoices.Adjust";
+        public const string MarkOverdue = "Permissions.Invoices.MarkOverdue";
+    }
+
+    public static class Charges
+    {
+        public const string Read = "Permissions.Charges.Read";
+        public const string Create = "Permissions.Charges.Create";
+        public const string Void = "Permissions.Charges.Void";
+    }
+
     public static class Organizations
     {
         public const string Read = "Permissions.Organizations.Read";

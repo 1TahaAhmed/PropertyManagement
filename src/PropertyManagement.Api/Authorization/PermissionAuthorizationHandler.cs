@@ -30,6 +30,7 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
         }
 
         var permissions = GetPermissionsForRole(role);
+
         if (permissions.Contains(requirement.Permission))
         {
             context.Succeed(requirement);
@@ -67,6 +68,17 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Terminate,
                 Permissions.Leases.Cancel,
                 Permissions.Leases.Renew,
+                Permissions.Billing.Preview,
+                Permissions.Billing.Generate,
+                Permissions.Invoices.Read,
+                Permissions.Invoices.Create,
+                Permissions.Invoices.Issue,
+                Permissions.Invoices.Void,
+                Permissions.Invoices.Adjust,
+                Permissions.Invoices.MarkOverdue,
+                Permissions.Charges.Read,
+                Permissions.Charges.Create,
+                Permissions.Charges.Void,
                 Permissions.Organizations.Read,
                 Permissions.Organizations.Update,
                 Permissions.Organizations.ManageMembers,
@@ -96,6 +108,16 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Leases.Terminate,
                 Permissions.Leases.Cancel,
                 Permissions.Leases.Renew,
+                Permissions.Billing.Preview,
+                Permissions.Billing.Generate,
+                Permissions.Invoices.Read,
+                Permissions.Invoices.Create,
+                Permissions.Invoices.Issue,
+                Permissions.Invoices.Adjust,
+                Permissions.Invoices.MarkOverdue,
+                Permissions.Charges.Read,
+                Permissions.Charges.Create,
+                Permissions.Charges.Void,
                 Permissions.Organizations.Read,
                 Permissions.Invitations.Read
             ],
@@ -105,6 +127,9 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Units.Read,
                 Permissions.Residents.Read,
                 Permissions.Leases.Read,
+                Permissions.Billing.Preview,
+                Permissions.Invoices.Read,
+                Permissions.Charges.Read,
                 Permissions.Organizations.Read
             ],
             _ => []

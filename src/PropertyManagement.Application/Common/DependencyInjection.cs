@@ -1,37 +1,36 @@
-﻿using FluentValidation;
+using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using PropertyManagement.Application.Abstractions.Email;
 using PropertyManagement.Application.Common.Behaviors;
-using PropertyManagement.Application.Common.Results;
-using PropertyManagement.Application.Features.Authentication.Registeration;
 using PropertyManagement.Application.Services.EmailConfirmation;
+using PropertyManagement.Domain.Entities.Billing.Services;
 
-namespace PropertyManagement.Application.Common
+namespace PropertyManagement.Application.Common;
+
+public static class DependencyInjection
 {
-    public static class DependencyInjection
+    public static IServiceCollection AddApplication(
+        this IServiceCollection services)
     {
-        public static IServiceCollection AddApplication(
-            this IServiceCollection services)
+        services.AddMediatR(configuration =>
         {
-            services.AddMediatR(configuration =>
-            {
-                configuration.RegisterServicesFromAssembly(
-                    typeof(DependencyInjection).Assembly);
+            configuration.RegisterServicesFromAssembly(
+                typeof(DependencyInjection).Assembly);
+        });
 
-            });
+        services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-            services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
+        services.AddTransient(
+            typeof(IPipelineBehavior<,>),
+            typeof(ValidationBehavior<,>));
 
-            services.AddTransient(
-                typeof(IPipelineBehavior<,>),
-                typeof(ValidationBehavior<,>));
+        services.AddScoped<
+            IEmailConfirmationCodeIssuer,
+            EmailConfirmationCodeIssuer>();
 
-            services.AddScoped<
-                IEmailConfirmationCodeIssuer,
-                EmailConfirmationCodeIssuer>();
+        services.AddSingleton<IBillingCalculationEngine, BillingCalculationEngine>();
 
-            return services;
-        }
+        return services;
     }
 }

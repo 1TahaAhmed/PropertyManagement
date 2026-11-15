@@ -65,7 +65,8 @@ public sealed class LeasesController(
             DueDayOfMonth: request.DueDayOfMonth,
             GracePeriodDays: request.GracePeriodDays,
             LateFeePercentage: request.LateFeePercentage,
-            PrimaryResidentId: request.PrimaryResidentId);
+            PrimaryResidentId: request.PrimaryResidentId,
+            Currency: request.Currency);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -110,7 +111,8 @@ public sealed class LeasesController(
             DueDayOfMonth: request.DueDayOfMonth,
             GracePeriodDays: request.GracePeriodDays,
             LateFeePercentage: request.LateFeePercentage,
-            RowVersion: request.RowVersion);
+            RowVersion: request.RowVersion,
+            Currency: request.Currency);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -465,7 +467,8 @@ public sealed class LeasesController(
             NewFrequency: request.NewFrequency,
             NewDueDayOfMonth: request.NewDueDayOfMonth,
             NewGracePeriodDays: request.NewGracePeriodDays,
-            NewLateFeePercentage: request.NewLateFeePercentage);
+            NewLateFeePercentage: request.NewLateFeePercentage,
+            NewCurrency: request.NewCurrency);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)

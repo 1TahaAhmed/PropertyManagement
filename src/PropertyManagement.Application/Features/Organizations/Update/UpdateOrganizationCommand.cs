@@ -6,4 +6,5 @@ namespace PropertyManagement.Application.Features.Organizations.Update;
 
 public sealed record UpdateOrganizationCommand(
     Guid OrganizationId,
-    string Name) : IRequest<Result<OrganizationResponse>>;
+    string Name,
+    string? DefaultCurrency = null) : IRequest<Result<OrganizationResponse>>;

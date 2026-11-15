@@ -1,3 +1,4 @@
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Enums;
 
@@ -33,7 +34,8 @@ public sealed record LeaseResponse(
     IReadOnlyList<LeaseResidentResponse> Residents,
     DateTime CreatedAtUtc,
     DateTime? UpdatedAtUtc,
-    string RowVersion)
+    string RowVersion,
+    string Currency = CurrencyCode.Default)
 {
     public static LeaseResponse FromEntity(Lease lease)
     {
@@ -65,6 +67,7 @@ public sealed record LeaseResponse(
                 r.IsOccupant)).ToList(),
             lease.CreatedAtUtc,
             lease.UpdatedAtUtc,
-            Convert.ToBase64String(lease.RowVersion));
+            Convert.ToBase64String(lease.RowVersion),
+            lease.Currency);
     }
 }

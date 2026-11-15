@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,9 +18,7 @@ public sealed class GlobalExceptionHandler(
             "Exception occurred. TraceId: {TraceId}",
             httpContext.TraceIdentifier);
 
-        var isUniqueViolation = exception is DbUpdateException dbUpdateEx &&
-                                dbUpdateEx.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx &&
-                                (sqlEx.Number == 2601 || sqlEx.Number == 2627);
+        var isUniqueViolation = IsUniqueConstraintViolation(exception);
 
         if (exception is DbUpdateConcurrencyException || isUniqueViolation)
         {
@@ -65,5 +63,31 @@ public sealed class GlobalExceptionHandler(
             ProblemDetails = problemDetails,
             Exception = exception
         });
+    }
+
+    private static bool IsUniqueConstraintViolation(Exception exception)
+    {
+        if (exception is not DbUpdateException dbUpdateEx || dbUpdateEx.InnerException is null)
+        {
+            return false;
+        }
+
+        if (dbUpdateEx.InnerException is Microsoft.Data.SqlClient.SqlException sqlEx &&
+            sqlEx.Number is 2601 or 2627)
+        {
+            return true;
+        }
+
+        var innerType = dbUpdateEx.InnerException.GetType();
+        if (string.Equals(innerType.FullName, "Microsoft.Data.Sqlite.SqliteException", StringComparison.Ordinal))
+        {
+            var codeProp = innerType.GetProperty("SqliteErrorCode");
+            if (codeProp?.GetValue(dbUpdateEx.InnerException) is int sqliteCode && sqliteCode == 19)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

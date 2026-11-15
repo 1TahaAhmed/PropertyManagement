@@ -1,12 +1,14 @@
 using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Abstractions.Residents;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Leases.Responses;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Enums;
 
@@ -18,7 +20,8 @@ public sealed class CreateDraftLeaseCommandHandler(
     IResidentRepository residentRepository,
     ILeaseRepository leaseRepository,
     IUnitOfWork unitOfWork,
-    IClock clock) : IRequestHandler<CreateDraftLeaseCommand, Result<LeaseResponse>>
+    IClock clock,
+    IOrganizationRepository? organizationRepository = null) : IRequestHandler<CreateDraftLeaseCommand, Result<LeaseResponse>>
 {
     public async Task<Result<LeaseResponse>> Handle(CreateDraftLeaseCommand request, CancellationToken cancellationToken)
     {
@@ -84,13 +87,29 @@ public sealed class CreateDraftLeaseCommandHandler(
             }
         }
 
+        string effectiveCurrency;
+        if (!string.IsNullOrWhiteSpace(request.Currency))
+        {
+            effectiveCurrency = CurrencyCode.Normalize(request.Currency);
+        }
+        else if (organizationRepository is not null)
+        {
+            var org = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
+            effectiveCurrency = org?.DefaultCurrency ?? CurrencyCode.Default;
+        }
+        else
+        {
+            effectiveCurrency = CurrencyCode.Default;
+        }
+
         var terms = new LeaseFinancialTerms(
             request.RentAmount,
             request.SecurityDeposit,
             request.Frequency,
             request.DueDayOfMonth,
             request.GracePeriodDays,
-            request.LateFeePercentage);
+            request.LateFeePercentage,
+            effectiveCurrency);
 
         var utcNow = clock.UtcNow;
         var lease = Lease.CreateDraft(

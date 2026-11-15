@@ -4,6 +4,7 @@ using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Organizations.Responses;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Organizations;
 using PropertyManagement.Domain.Enums;
 
@@ -51,7 +52,11 @@ public sealed class CreateOrganizationCommandHandler(
         }
 
         var utcNow = clock.UtcNow;
-        var organization = Organization.Create(trimmedName, utcNow, customSlug: uniqueSlug);
+        var defaultCurrency = string.IsNullOrWhiteSpace(command.DefaultCurrency)
+            ? CurrencyCode.Default
+            : CurrencyCode.Normalize(command.DefaultCurrency);
+
+        var organization = Organization.Create(trimmedName, utcNow, customSlug: uniqueSlug, defaultCurrency: defaultCurrency);
         var ownerMember = OrganizationMember.Create(
             organization.Id,
             command.UserId,
@@ -68,6 +73,7 @@ public sealed class CreateOrganizationCommandHandler(
             Identifier: organization.Identifier,
             Status: organization.Status,
             CreatedAt: organization.CreatedAt,
-            UpdatedAt: organization.UpdatedAt));
+            UpdatedAt: organization.UpdatedAt,
+            DefaultCurrency: organization.DefaultCurrency));
     }
 }

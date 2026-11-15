@@ -1,3 +1,5 @@
+using PropertyManagement.Domain.Common;
+
 namespace PropertyManagement.Application.Features.Authentication.RegisterCompany;
 
 public sealed record RegisterCompanyResponse(
@@ -7,5 +9,6 @@ public sealed record RegisterCompanyResponse(
     string LastName,
     Guid OrganizationId,
     string OrganizationName,
-    bool RequiresEmailConfirmation
+    bool RequiresEmailConfirmation,
+    string DefaultCurrency = CurrencyCode.Default
 );

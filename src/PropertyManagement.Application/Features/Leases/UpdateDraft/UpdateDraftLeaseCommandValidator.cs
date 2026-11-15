@@ -1,4 +1,5 @@
 using FluentValidation;
+using PropertyManagement.Domain.Common;
 
 namespace PropertyManagement.Application.Features.Leases.UpdateDraft;
 
@@ -19,5 +20,9 @@ public sealed class UpdateDraftLeaseCommandValidator : AbstractValidator<UpdateD
         RuleFor(x => x.DueDayOfMonth).InclusiveBetween(1, 28).WithMessage("Due day of month must be between 1 and 28.");
         RuleFor(x => x.GracePeriodDays).GreaterThanOrEqualTo(0).WithMessage("Grace period days cannot be negative.");
         RuleFor(x => x.LateFeePercentage).InclusiveBetween(0m, 100m).WithMessage("Late fee percentage must be between 0 and 100.");
+        RuleFor(x => x.Currency)
+            .Must(CurrencyCode.IsValid)
+            .WithMessage("Currency must be a valid 3-letter ISO currency code (e.g., USD, EGP).")
+            .When(x => !string.IsNullOrWhiteSpace(x.Currency));
     }
 }

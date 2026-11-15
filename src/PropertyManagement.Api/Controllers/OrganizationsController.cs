@@ -45,7 +45,8 @@ public sealed class OrganizationsController(
         var command = new CreateOrganizationCommand(
             UserId: currentUser.UserId.Value,
             Name: request.Name,
-            CustomSlug: request.Identifier);
+            CustomSlug: request.Identifier,
+            DefaultCurrency: request.DefaultCurrency);
 
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
@@ -130,7 +131,7 @@ public sealed class OrganizationsController(
             return errorResult!;
         }
 
-        var command = new UpdateOrganizationCommand(organizationId, request.Name);
+        var command = new UpdateOrganizationCommand(organizationId, request.Name, request.DefaultCurrency);
         var result = await sender.Send(command, cancellationToken);
         if (result.IsFailure)
         {

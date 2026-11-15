@@ -1,4 +1,5 @@
 using FluentValidation;
+using PropertyManagement.Domain.Common;
 
 namespace PropertyManagement.Application.Features.Leases.Renew;
 
@@ -38,5 +39,10 @@ public sealed class RenewLeaseCommandValidator : AbstractValidator<RenewLeaseCom
         RuleFor(x => x.NewLateFeePercentage)
             .InclusiveBetween(0m, 100m).WithMessage("Late fee percentage must be between 0 and 100.")
             .When(x => x.NewLateFeePercentage.HasValue);
+
+        RuleFor(x => x.NewCurrency)
+            .Must(CurrencyCode.IsValid)
+            .WithMessage("Currency must be a valid 3-letter ISO currency code (e.g., USD, EGP).")
+            .When(x => !string.IsNullOrWhiteSpace(x.NewCurrency));
     }
 }

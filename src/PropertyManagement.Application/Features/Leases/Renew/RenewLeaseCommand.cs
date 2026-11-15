@@ -14,4 +14,5 @@ public sealed record RenewLeaseCommand(
     RentFrequency? NewFrequency = null,
     int? NewDueDayOfMonth = null,
     int? NewGracePeriodDays = null,
-    decimal? NewLateFeePercentage = null) : IRequest<Result<LeaseResponse>>;
+    decimal? NewLateFeePercentage = null,
+    string? NewCurrency = null) : IRequest<Result<LeaseResponse>>;

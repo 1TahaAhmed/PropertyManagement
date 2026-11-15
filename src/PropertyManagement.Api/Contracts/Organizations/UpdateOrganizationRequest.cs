@@ -1,3 +1,5 @@
 namespace PropertyManagement.Api.Contracts.Organizations;
 
-public sealed record UpdateOrganizationRequest(string Name);
+public sealed record UpdateOrganizationRequest(
+    string Name,
+    string? DefaultCurrency = null);

@@ -5,6 +5,7 @@ using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Leases.Responses;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Enums;
 
@@ -34,15 +35,21 @@ public sealed class RenewLeaseCommandHandler(
             || request.NewFrequency.HasValue
             || request.NewDueDayOfMonth.HasValue
             || request.NewGracePeriodDays.HasValue
-            || request.NewLateFeePercentage.HasValue)
+            || request.NewLateFeePercentage.HasValue
+            || !string.IsNullOrWhiteSpace(request.NewCurrency))
         {
+            var effectiveCurrency = string.IsNullOrWhiteSpace(request.NewCurrency)
+                ? existingLease.Currency
+                : CurrencyCode.Normalize(request.NewCurrency);
+
             newTerms = new LeaseFinancialTerms(
                 rentAmount: request.NewRentAmount ?? existingLease.RentAmount,
                 securityDeposit: request.NewSecurityDeposit ?? existingLease.SecurityDeposit,
                 frequency: request.NewFrequency ?? existingLease.Frequency,
                 dueDayOfMonth: request.NewDueDayOfMonth ?? existingLease.DueDayOfMonth,
                 gracePeriodDays: request.NewGracePeriodDays ?? existingLease.GracePeriodDays,
-                lateFeePercentage: request.NewLateFeePercentage ?? existingLease.LateFeePercentage);
+                lateFeePercentage: request.NewLateFeePercentage ?? existingLease.LateFeePercentage,
+                currency: effectiveCurrency);
         }
 
         var utcNow = clock.UtcNow;
@@ -63,7 +70,6 @@ public sealed class RenewLeaseCommandHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(existingLease.UnitId, request.OrganizationId, cancellationToken);
 
-        // Verify no future overlapping lease exists under Serializable + Unit UPDLOCK
         var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
             existingLease.UnitId,
             request.OrganizationId,

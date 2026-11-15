@@ -17,4 +17,5 @@ public sealed record CreateDraftLeaseCommand(
     int DueDayOfMonth = 1,
     int GracePeriodDays = 5,
     decimal LateFeePercentage = 0m,
-    Guid? PrimaryResidentId = null) : IRequest<Result<LeaseResponse>>;
+    Guid? PrimaryResidentId = null,
+    string? Currency = null) : IRequest<Result<LeaseResponse>>;

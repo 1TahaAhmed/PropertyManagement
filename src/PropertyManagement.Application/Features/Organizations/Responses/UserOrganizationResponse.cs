@@ -1,3 +1,4 @@
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Application.Features.Organizations.Responses;
@@ -8,4 +9,5 @@ public sealed record UserOrganizationResponse(
     string Identifier,
     OrganizationStatus Status,
     IReadOnlyList<MembershipRole> Roles,
-    bool IsCurrent);
+    bool IsCurrent,
+    string DefaultCurrency = CurrencyCode.Default);

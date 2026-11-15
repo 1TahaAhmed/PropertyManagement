@@ -1,4 +1,6 @@
-﻿namespace PropertyManagement.Api.Contracts.Authentication;
+using PropertyManagement.Domain.Common;
+
+namespace PropertyManagement.Api.Contracts.Authentication;
 
 public sealed record RegisterCompanyRequest(
     string CompanyName,
@@ -7,5 +9,6 @@ public sealed record RegisterCompanyRequest(
     string FirstName,
     string LastName,
     string PhoneNumber,
-    string Address
+    string Address,
+    string DefaultCurrency = CurrencyCode.Default
 );

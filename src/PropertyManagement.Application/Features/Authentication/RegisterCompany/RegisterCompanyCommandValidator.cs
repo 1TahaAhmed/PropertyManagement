@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+using FluentValidation;
+using PropertyManagement.Domain.Common;
 
 namespace PropertyManagement.Application.Features.Authentication.RegisterCompany;
 
@@ -25,5 +26,9 @@ public sealed class RegisterCompanyCommandValidator : AbstractValidator<Register
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.")
             .MinimumLength(8).WithMessage("Password must be at least 8 characters.");
+
+        RuleFor(x => x.DefaultCurrency)
+            .Must(CurrencyCode.IsValid)
+            .WithMessage("Default currency must be a valid 3-letter ISO currency code (e.g., USD, EGP).");
     }
 }

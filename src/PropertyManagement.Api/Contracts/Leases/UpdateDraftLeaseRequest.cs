@@ -11,4 +11,5 @@ public sealed record UpdateDraftLeaseRequest(
     int DueDayOfMonth = 1,
     int GracePeriodDays = 5,
     decimal LateFeePercentage = 0m,
-    string? RowVersion = null);
+    string? RowVersion = null,
+    string? Currency = null);

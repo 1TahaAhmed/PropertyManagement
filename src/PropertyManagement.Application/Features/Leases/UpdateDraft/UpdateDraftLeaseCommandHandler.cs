@@ -5,6 +5,7 @@ using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
 using PropertyManagement.Application.Features.Leases.Responses;
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Enums;
 
@@ -49,13 +50,18 @@ public sealed class UpdateDraftLeaseCommandHandler(
             }
         }
 
+        var effectiveCurrency = string.IsNullOrWhiteSpace(request.Currency)
+            ? lease.Currency
+            : CurrencyCode.Normalize(request.Currency);
+
         var terms = new LeaseFinancialTerms(
             request.RentAmount,
             request.SecurityDeposit,
             request.Frequency,
             request.DueDayOfMonth,
             request.GracePeriodDays,
-            request.LateFeePercentage);
+            request.LateFeePercentage,
+            effectiveCurrency);
 
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(lease.UnitId, request.OrganizationId, cancellationToken);

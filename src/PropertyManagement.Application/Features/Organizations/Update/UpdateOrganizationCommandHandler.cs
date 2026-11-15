@@ -34,7 +34,14 @@ public sealed class UpdateOrganizationCommandHandler(
                 Type: ErrorType.Conflict));
         }
 
-        organization.UpdateName(trimmedName, clock.UtcNow);
+        var utcNow = clock.UtcNow;
+        organization.UpdateName(trimmedName, utcNow);
+
+        if (!string.IsNullOrWhiteSpace(command.DefaultCurrency))
+        {
+            organization.UpdateDefaultCurrency(command.DefaultCurrency, utcNow);
+        }
+
         await organizationRepository.SaveChangesAsync(cancellationToken);
 
         return Result<OrganizationResponse>.Success(new OrganizationResponse(
@@ -43,6 +50,7 @@ public sealed class UpdateOrganizationCommandHandler(
             Identifier: organization.Identifier,
             Status: organization.Status,
             CreatedAt: organization.CreatedAt,
-            UpdatedAt: organization.UpdatedAt));
+            UpdatedAt: organization.UpdatedAt,
+            DefaultCurrency: organization.DefaultCurrency));
     }
 }

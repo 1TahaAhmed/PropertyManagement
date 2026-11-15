@@ -206,7 +206,8 @@ public sealed class AuthController(ISender sender, ICurrentUser currentUser) : C
             FirstName: request.FirstName,
             LastName: request.LastName,
             PhoneNumber: request.PhoneNumber,
-            Address: request.Address);
+            Address: request.Address,
+            DefaultCurrency: request.DefaultCurrency);
 
         var result = await sender.Send(command, cancellationToken);
 

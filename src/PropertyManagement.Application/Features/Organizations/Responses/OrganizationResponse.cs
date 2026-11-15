@@ -1,3 +1,4 @@
+using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Enums;
 
 namespace PropertyManagement.Application.Features.Organizations.Responses;
@@ -8,4 +9,5 @@ public sealed record OrganizationResponse(
     string Identifier,
     OrganizationStatus Status,
     DateTime CreatedAt,
-    DateTime? UpdatedAt);
+    DateTime? UpdatedAt,
+    string DefaultCurrency = CurrencyCode.Default);

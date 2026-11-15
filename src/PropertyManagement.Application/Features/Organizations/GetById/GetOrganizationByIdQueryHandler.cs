@@ -39,6 +39,7 @@ public sealed class GetOrganizationByIdQueryHandler(
             Identifier: organization.Identifier,
             Status: organization.Status,
             CreatedAt: organization.CreatedAt,
-            UpdatedAt: organization.UpdatedAt));
+            UpdatedAt: organization.UpdatedAt,
+            DefaultCurrency: organization.DefaultCurrency));
     }
 }
