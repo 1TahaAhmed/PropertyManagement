@@ -488,7 +488,8 @@ public class LeaseRelationalPersistenceIntegrationTests
                 new ResidentRepository(overlapCtx),
                 new LeaseRepository(overlapCtx),
                 overlapCtx,
-                new TestClock(utcNow.AddMinutes(1)));
+                new TestClock(utcNow.AddMinutes(1)),
+                new OrganizationRepository(overlapCtx));
 
             var overlapResult = await handler.Handle(
                 new CreateDraftLeaseCommand(
@@ -508,7 +509,8 @@ public class LeaseRelationalPersistenceIntegrationTests
                 new ResidentRepository(validCtx),
                 new LeaseRepository(validCtx),
                 validCtx,
-                new TestClock(utcNow.AddMinutes(2)));
+                new TestClock(utcNow.AddMinutes(2)),
+                new OrganizationRepository(validCtx));
 
             var createResult = await handler.Handle(
                 new CreateDraftLeaseCommand(

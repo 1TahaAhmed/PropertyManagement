@@ -61,7 +61,11 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
             query = query.Where(r => dbContext.LeaseResidents.Any(lr =>
                 lr.OrganizationId == organizationId &&
                 lr.ResidentId == r.Id &&
-                (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant)));
+                (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant) &&
+                dbContext.Leases.Any(l =>
+                    l.Id == lr.LeaseId &&
+                    l.OrganizationId == organizationId &&
+                    l.Status != LeaseStatus.Cancelled)));
         }
 
         if (leaseRole.HasValue)
@@ -69,7 +73,11 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
             query = query.Where(r => dbContext.LeaseResidents.Any(lr =>
                 lr.OrganizationId == organizationId &&
                 lr.ResidentId == r.Id &&
-                lr.Role == leaseRole.Value));
+                lr.Role == leaseRole.Value &&
+                dbContext.Leases.Any(l =>
+                    l.Id == lr.LeaseId &&
+                    l.OrganizationId == organizationId &&
+                    l.Status != LeaseStatus.Cancelled)));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
@@ -94,7 +102,11 @@ public sealed class ResidentRepository(ApplicationDbContext dbContext) : IReside
         return dbContext.LeaseResidents.AnyAsync(
             lr => lr.OrganizationId == organizationId &&
                   lr.ResidentId == residentId &&
-                  (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant),
+                  (lr.Role == LeaseResidentRole.PrimaryTenant || lr.Role == LeaseResidentRole.CoTenant) &&
+                  dbContext.Leases.Any(l =>
+                      l.Id == lr.LeaseId &&
+                      l.OrganizationId == organizationId &&
+                      l.Status != LeaseStatus.Cancelled),
             cancellationToken);
     }
 

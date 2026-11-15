@@ -55,6 +55,20 @@ public sealed class ChargeRepository(ApplicationDbContext context) : IChargeRepo
         await context.Charges.AddAsync(charge, cancellationToken);
     }
 
+    public void Detach(Charge charge)
+    {
+        var entry = context.Entry(charge);
+        if (entry.State != EntityState.Detached)
+        {
+            entry.State = EntityState.Detached;
+        }
+    }
+
+    public void SetRowVersion(Charge charge, byte[] rowVersion)
+    {
+        context.Entry(charge).Property(c => c.RowVersion).OriginalValue = rowVersion;
+    }
+
     public void Update(Charge charge)
     {
         if (context.Entry(charge).State == EntityState.Detached)

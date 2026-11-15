@@ -7,4 +7,5 @@ namespace PropertyManagement.Application.Features.Billing.Charges;
 public sealed record VoidChargeCommand(
     Guid OrganizationId,
     Guid ChargeId,
-    string Reason) : IRequest<Result<ChargeResponse>>;
+    string Reason,
+    string? RowVersion = null) : IRequest<Result<ChargeResponse>>;

@@ -55,9 +55,14 @@ public sealed class BillingCalculationEngine : IBillingCalculationEngine
             throw new InvalidOperationException("Lease effective end date cannot be earlier than lease start date.");
         }
 
-        var effectivePeriod = request.BillingPeriod.Intersect(request.LeaseStartDate, effectiveLeaseEnd)
-            ?? throw new InvalidOperationException(
+        var intersectedPeriod = request.BillingPeriod.Intersect(request.LeaseStartDate, effectiveLeaseEnd);
+        if (intersectedPeriod is null && request.IncludeRent)
+        {
+            throw new InvalidOperationException(
                 $"Lease ({request.LeaseStartDate:yyyy-MM-dd} to {effectiveLeaseEnd:yyyy-MM-dd}) has no billable days within billing period ({request.BillingPeriod.StartDate:yyyy-MM-dd} to {request.BillingPeriod.EndDate:yyyy-MM-dd}).");
+        }
+
+        var effectivePeriod = intersectedPeriod ?? request.BillingPeriod;
 
         var dueDate = request.DueDateOverride ?? CalculateDueDate(request.BillingPeriod.StartDate, request.DueDayOfMonth, request.IssueDate);
         if (dueDate < request.IssueDate)

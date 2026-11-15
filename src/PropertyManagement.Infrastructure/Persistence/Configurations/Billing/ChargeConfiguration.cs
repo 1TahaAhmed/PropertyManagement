@@ -43,6 +43,7 @@ public sealed class ChargeConfiguration : IEntityTypeConfiguration<Charge>
         builder.Property(c => c.VoidReason).HasMaxLength(500);
         builder.Property(c => c.CreatedAtUtc).IsRequired();
         builder.Property(c => c.UpdatedAtUtc);
+        builder.Property(c => c.RowVersion).IsRowVersion();
 
         builder.HasOne<Lease>()
             .WithMany()

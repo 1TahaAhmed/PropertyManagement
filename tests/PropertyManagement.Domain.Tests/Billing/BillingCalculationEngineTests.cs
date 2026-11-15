@@ -265,4 +265,28 @@ public sealed class BillingCalculationEngineTests
         Assert.Throws<ArgumentException>(() => CurrencyCode.Normalize("US"));
         Assert.Throws<ArgumentException>(() => CurrencyCode.Normalize("123"));
     }
+
+    [Fact]
+    public void Calculate_WhenIncludeRentFalseAndPeriodOutsideLeaseRange_ShouldSucceedWithAdditionalCharges()
+    {
+        var request = new BillingCalculationRequest(
+            new DateOnly(2026, 1, 1),
+            new DateOnly(2026, 3, 31),
+            null,
+            10000m,
+            RentFrequency.Monthly,
+            5,
+            "EGP",
+            BillingPeriod.ForMonth(2026, 4),
+            new DateOnly(2026, 4, 2),
+            AdditionalCharges: [new BillingAdditionalChargeInput(ChargeType.Utility, "Final Water Bill", 1m, 350m)],
+            IncludeRent: false);
+
+        var result = _engine.Calculate(request);
+
+        Assert.False(result.IsProrated);
+        Assert.Equal(BillingPeriod.ForMonth(2026, 4), result.EffectiveServicePeriod);
+        Assert.Single(result.Lines);
+        Assert.Equal(350m, result.Total);
+    }
 }

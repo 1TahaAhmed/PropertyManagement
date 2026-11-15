@@ -1,5 +1,6 @@
 using NSubstitute;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Abstractions.Residents;
@@ -38,13 +39,16 @@ public sealed class LeaseConcurrencyHandlingTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(utcNow);
 
+        var organizationRepository = Substitute.For<IOrganizationRepository>();
+
         var handler = new CreateDraftLeaseCommandHandler(
             propertyRepository,
             unitRepository,
             residentRepository,
             leaseRepository,
             unitOfWork,
-            clock);
+            clock,
+            organizationRepository);
 
         var result = await handler.Handle(
             new CreateDraftLeaseCommand(orgId, property.Id, unit.Id, new DateOnly(2026, 12, 1), new DateOnly(2027, 11, 30), 10000m, 20000m),

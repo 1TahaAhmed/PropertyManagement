@@ -18,6 +18,19 @@ public sealed class RenewLeaseCommandHandler(
 {
     public async Task<Result<LeaseResponse>> Handle(RenewLeaseCommand request, CancellationToken cancellationToken)
     {
+        var initialLease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
+        if (initialLease is null || initialLease.OrganizationId != request.OrganizationId)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Lease.NotFound",
+                Message: "The specified lease to renew was not found.",
+                Type: ErrorType.NotFound));
+        }
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await leaseRepository.AcquireUnitLockAsync(initialLease.UnitId, request.OrganizationId, cancellationToken);
+
+        leaseRepository.Detach(initialLease);
         var existingLease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
         if (existingLease is null || existingLease.OrganizationId != request.OrganizationId)
         {
@@ -66,9 +79,6 @@ public sealed class RenewLeaseCommandHandler(
                 Message: ex.Message,
                 Type: ErrorType.Validation));
         }
-
-        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        await leaseRepository.AcquireUnitLockAsync(existingLease.UnitId, request.OrganizationId, cancellationToken);
 
         var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
             existingLease.UnitId,

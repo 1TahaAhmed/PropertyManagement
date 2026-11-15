@@ -1,3 +1,4 @@
+using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Billing;
@@ -14,6 +15,9 @@ public sealed class ApplyInvoiceAdjustmentCommandHandler(
 {
     public async Task<Result<InvoiceResponse>> Handle(ApplyInvoiceAdjustmentCommand request, CancellationToken cancellationToken)
     {
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await invoiceRepository.AcquireInvoiceLockAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
+
         var invoice = await invoiceRepository.GetByIdAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
         if (invoice is null || invoice.OrganizationId != request.OrganizationId)
         {
@@ -59,6 +63,7 @@ public sealed class ApplyInvoiceAdjustmentCommandHandler(
 
         invoiceRepository.Update(invoice);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return Result<InvoiceResponse>.Success(InvoiceResponse.FromEntity(invoice));
     }

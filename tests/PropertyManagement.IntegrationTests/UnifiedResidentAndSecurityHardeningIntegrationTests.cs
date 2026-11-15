@@ -118,9 +118,22 @@ public sealed class UnifiedResidentAndSecurityHardeningIntegrationTests
             Assert.Equal(1, occCount);
             Assert.Equal(occupant.Id, occupants[0].Id);
 
+            var cancelledPrimary = Resident.Create(orgId, "Cancelled", "Tenant", "+201000000006", utcNow, nationalIdOrPassport: "29301011234567");
+            var cancelledLease = Lease.CreateDraft(orgId, prop.Id, unit.Id, new DateOnly(2028, 1, 1), new DateOnly(2028, 12, 31), new LeaseFinancialTerms(15000m, 30000m), utcNow);
+            cancelledLease.AddResident(cancelledPrimary.Id, LeaseResidentRole.PrimaryTenant, utcNow);
+            cancelledLease.Cancel(utcNow);
+            await setupCtx.Residents.AddAsync(cancelledPrimary);
+            await setupCtx.Leases.AddAsync(cancelledLease);
+            await setupCtx.SaveChangesAsync();
+
+            (leaseHolders, holderCount) = await repo.GetPagedAsync(orgId, null, null, 1, 20, onlyLeaseHolders: true);
+            Assert.Equal(2, holderCount);
+            Assert.DoesNotContain(leaseHolders, r => r.Id == cancelledPrimary.Id);
+
             Assert.True(await repo.IsLeaseHolderAsync(primary.Id, orgId));
             Assert.False(await repo.IsLeaseHolderAsync(occupant.Id, orgId));
             Assert.False(await repo.IsLeaseHolderAsync(unassigned.Id, orgId));
+            Assert.False(await repo.IsLeaseHolderAsync(cancelledPrimary.Id, orgId));
         }
     }
 

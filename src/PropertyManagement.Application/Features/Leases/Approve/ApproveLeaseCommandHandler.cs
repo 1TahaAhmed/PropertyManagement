@@ -16,6 +16,19 @@ public sealed class ApproveLeaseCommandHandler(
 {
     public async Task<Result<LeaseResponse>> Handle(ApproveLeaseCommand request, CancellationToken cancellationToken)
     {
+        var initialLease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
+        if (initialLease is null || initialLease.OrganizationId != request.OrganizationId)
+        {
+            return Result<LeaseResponse>.Failure(new Error(
+                Code: "Lease.NotFound",
+                Message: "The specified lease was not found.",
+                Type: ErrorType.NotFound));
+        }
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await leaseRepository.AcquireUnitLockAsync(initialLease.UnitId, request.OrganizationId, cancellationToken);
+
+        leaseRepository.Detach(initialLease);
         var lease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
         if (lease is null || lease.OrganizationId != request.OrganizationId)
         {
@@ -47,9 +60,6 @@ public sealed class ApproveLeaseCommandHandler(
                     Type: ErrorType.Validation));
             }
         }
-
-        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
-        await leaseRepository.AcquireUnitLockAsync(lease.UnitId, request.OrganizationId, cancellationToken);
 
         var hasOverlap = await leaseRepository.HasOverlappingLeaseAsync(
             lease.UnitId,

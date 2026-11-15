@@ -1,6 +1,7 @@
 using System.Data;
 using NSubstitute;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Organizations;
 using PropertyManagement.Application.Abstractions.Properties;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Abstractions.Residents;
@@ -83,7 +84,8 @@ public sealed class ResidentUnifiedAndLeaseOperationsTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(FixedNow);
 
-        var handler = new CreateDraftLeaseCommandHandler(propRepo, unitRepo, resRepo, leaseRepo, uow, clock);
+        var orgRepo = Substitute.For<IOrganizationRepository>();
+        var handler = new CreateDraftLeaseCommandHandler(propRepo, unitRepo, resRepo, leaseRepo, uow, clock, orgRepo);
         var result = await handler.Handle(
             new CreateDraftLeaseCommand(orgId, property.Id, unit.Id, new DateOnly(2026, 12, 1), new DateOnly(2027, 11, 30), 10000m, 20000m, PrimaryResidentId: resident.Id),
             CancellationToken.None);

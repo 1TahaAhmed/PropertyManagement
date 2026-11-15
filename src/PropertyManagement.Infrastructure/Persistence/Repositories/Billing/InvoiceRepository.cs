@@ -47,6 +47,33 @@ public sealed class InvoiceRepository(ApplicationDbContext context) : IInvoiceRe
             cancellationToken);
     }
 
+    public async Task<bool> ExistsActiveRentOverlapAsync(
+        Guid leaseId,
+        Guid organizationId,
+        DateOnly periodStart,
+        DateOnly periodEnd,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Invoices.AnyAsync(
+            i => i.OrganizationId == organizationId &&
+                 i.LeaseId == leaseId &&
+                 i.Status != InvoiceStatus.Void &&
+                 i.Lines.Any(l => l.Type == ChargeType.Rent) &&
+                 i.BillingPeriodStart <= periodEnd &&
+                 i.BillingPeriodEnd >= periodStart,
+            cancellationToken);
+    }
+
+    public async Task AcquireInvoiceLockAsync(Guid invoiceId, Guid organizationId, CancellationToken cancellationToken = default)
+    {
+        if (context.Database.IsSqlServer())
+        {
+            await context.Database.ExecuteSqlInterpolatedAsync(
+                $"SELECT 1 FROM [Invoices] WITH (UPDLOCK, ROWLOCK) WHERE [Id] = {invoiceId} AND [OrganizationId] = {organizationId}",
+                cancellationToken);
+        }
+    }
+
     public async Task<IReadOnlyList<Invoice>> GetByLeaseIdAsync(Guid leaseId, Guid organizationId, CancellationToken cancellationToken = default)
     {
         return await context.Invoices
@@ -60,10 +87,22 @@ public sealed class InvoiceRepository(ApplicationDbContext context) : IInvoiceRe
 
     public async Task<(IReadOnlyList<Invoice> Items, int TotalCount)> GetPagedAsync(InvoiceFilter filter, CancellationToken cancellationToken = default)
     {
-        var query = context.Invoices
-            .Include(i => i.Lines)
-            .Include(i => i.Adjustments)
-            .Where(i => i.OrganizationId == filter.OrganizationId);
+        IQueryable<Invoice> query = context.Invoices;
+
+        if (filter.IncludeDetails)
+        {
+            query = query
+                .Include(i => i.Lines)
+                .Include(i => i.Adjustments)
+                .AsSplitQuery();
+        }
+
+        if (filter.AsNoTracking)
+        {
+            query = query.AsNoTracking();
+        }
+
+        query = query.Where(i => i.OrganizationId == filter.OrganizationId);
 
         if (filter.LeaseId.HasValue)
         {

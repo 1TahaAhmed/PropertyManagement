@@ -42,6 +42,11 @@ public sealed class CreateManualInvoiceCommandValidator : AbstractValidator<Crea
             })
             .When(x => x.Lines is not null);
 
+        RuleFor(x => x.IssueDate)
+            .Must(d => d!.Value.Year is >= 2000 and <= 9999)
+            .WithMessage("IssueDate year must be between 2000 and 9999.")
+            .When(x => x.IssueDate.HasValue);
+
         RuleFor(x => x.ChargeIds)
             .Must(ids => ids!.All(id => id != Guid.Empty))
             .WithMessage("ChargeIds cannot contain empty GUIDs.")

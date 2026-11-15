@@ -182,7 +182,8 @@ public sealed record ChargeResponse(
     Guid? InvoiceId,
     string? VoidReason,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc)
+    DateTime? UpdatedAtUtc,
+    string RowVersion = "")
 {
     public static ChargeResponse FromEntity(Charge charge) => new(
         charge.Id,
@@ -203,7 +204,8 @@ public sealed record ChargeResponse(
         charge.InvoiceId,
         charge.VoidReason,
         charge.CreatedAtUtc,
-        charge.UpdatedAtUtc);
+        charge.UpdatedAtUtc,
+        Convert.ToBase64String(charge.RowVersion));
 }
 
 public sealed record BillingPreviewLineResponse(

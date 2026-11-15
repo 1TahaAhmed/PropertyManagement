@@ -34,6 +34,7 @@ public interface ILeaseRepository
         Guid organizationId,
         CancellationToken cancellationToken = default);
     Task AddAsync(Lease lease, CancellationToken cancellationToken = default);
+    void Detach(Lease lease);
     void SetRowVersion(Lease lease, byte[] rowVersion);
     void Update(Lease lease);
 }

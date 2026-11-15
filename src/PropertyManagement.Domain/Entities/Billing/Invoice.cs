@@ -246,7 +246,7 @@ public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
         _adjustments.Add(adjustment);
         RecalculateTotals();
 
-        if (Status == InvoiceStatus.PartiallyPaid && BalanceDue == 0m)
+        if (Status is InvoiceStatus.Issued or InvoiceStatus.PartiallyPaid or InvoiceStatus.Overdue && BalanceDue == 0m)
         {
             Status = InvoiceStatus.Paid;
         }

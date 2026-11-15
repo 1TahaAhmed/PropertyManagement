@@ -26,6 +26,7 @@ public sealed class Charge : IOrganizationScoped
     public string? VoidReason { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
+    public byte[] RowVersion { get; private set; } = [];
 
     public static bool IsCreditType(ChargeType type) =>
         type is ChargeType.Discount or ChargeType.CreditAdjustment;

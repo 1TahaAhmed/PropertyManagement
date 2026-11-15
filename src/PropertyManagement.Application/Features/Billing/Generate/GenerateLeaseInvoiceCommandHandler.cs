@@ -35,6 +35,7 @@ public sealed class GenerateLeaseInvoiceCommandHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(initialLease.UnitId, request.OrganizationId, cancellationToken);
 
+        leaseRepository.Detach(initialLease);
         var lease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
         if (lease is null || lease.OrganizationId != request.OrganizationId)
         {
@@ -80,6 +81,24 @@ public sealed class GenerateLeaseInvoiceCommandHandler(
                 return Result<InvoiceResponse>.Failure(new Error(
                     Code: "Billing.DuplicateInvoice",
                     Message: $"An active invoice already exists for idempotency key '{effectiveIdempotencyKey}'.",
+                    Type: ErrorType.Conflict));
+            }
+        }
+
+        if (request.IncludeRent)
+        {
+            var hasOverlappingRent = await invoiceRepository.ExistsActiveRentOverlapAsync(
+                lease.Id,
+                request.OrganizationId,
+                request.PeriodStart,
+                request.PeriodEnd,
+                cancellationToken);
+
+            if (hasOverlappingRent)
+            {
+                return Result<InvoiceResponse>.Failure(new Error(
+                    Code: "Billing.RentAlreadyBilled",
+                    Message: $"An active rent invoice already exists covering part or all of period {request.PeriodStart:yyyy-MM-dd} to {request.PeriodEnd:yyyy-MM-dd}.",
                     Type: ErrorType.Conflict));
             }
         }
@@ -146,12 +165,22 @@ public sealed class GenerateLeaseInvoiceCommandHandler(
 
         if (request.AutoIssue)
         {
-            var invoiceNumber = await invoiceNumberGenerator.GenerateNextAsync(
-                request.OrganizationId,
-                calculationResult.IssueDate.Year,
-                cancellationToken);
+            try
+            {
+                var invoiceNumber = await invoiceNumberGenerator.GenerateNextAsync(
+                    request.OrganizationId,
+                    calculationResult.IssueDate.Year,
+                    cancellationToken);
 
-            invoice.Issue(invoiceNumber, calculationResult.IssueDate, utcNow);
+                invoice.Issue(invoiceNumber, calculationResult.IssueDate, utcNow);
+            }
+            catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+            {
+                return Result<InvoiceResponse>.Failure(new Error(
+                    Code: "Invoice.IssueError",
+                    Message: ex.Message,
+                    Type: ErrorType.Validation));
+            }
         }
 
         await invoiceRepository.AddAsync(invoice, cancellationToken);

@@ -70,7 +70,9 @@ public sealed class InvoiceLifecycleAndChargesTests
             ChargeType.Utility, "Electricity", 2m, 150m, "EGP", FixedNow);
         chargeRepo.GetByIdAsync(charge.Id, orgId, Arg.Any<CancellationToken>()).Returns(charge);
 
-        var voidHandler = new VoidChargeCommandHandler(chargeRepo, uow, clock);
+        var voidTx = Substitute.For<PropertyManagement.Application.Abstractions.IDbTransaction>();
+        uow.BeginTransactionAsync(IsolationLevel.Serializable, Arg.Any<CancellationToken>()).Returns(voidTx);
+        var voidHandler = new VoidChargeCommandHandler(chargeRepo, leaseRepo, uow, clock);
         var voidRes = await voidHandler.Handle(new VoidChargeCommand(orgId, charge.Id, "Entered by mistake"), CancellationToken.None);
 
         Assert.True(voidRes.IsSuccess);
@@ -283,5 +285,105 @@ public sealed class InvoiceLifecycleAndChargesTests
             Guid.NewGuid(), Guid.NewGuid(), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31),
             new DateOnly(2026, 3, 10)));
         Assert.False(emptyManual.IsValid);
+    }
+
+    [Fact]
+    public async Task VoidCharge_ShouldAcquireUnitLock_AndRejectInvalidRowVersion()
+    {
+        var orgId = Guid.NewGuid();
+        var lease = CreateActiveLease(orgId);
+        var charge = Charge.Create(orgId, lease.Id, lease.PropertyId, lease.UnitId, lease.Residents.First().ResidentId,
+            ChargeType.Utility, "Water", 1m, 200m, "USD", FixedNow);
+
+        var chargeRepo = Substitute.For<IChargeRepository>();
+        chargeRepo.GetByIdAsync(charge.Id, orgId, Arg.Any<CancellationToken>()).Returns(charge);
+        var leaseRepo = Substitute.For<ILeaseRepository>();
+        var uow = Substitute.For<IUnitOfWork>();
+        var tx = Substitute.For<PropertyManagement.Application.Abstractions.IDbTransaction>();
+        uow.BeginTransactionAsync(IsolationLevel.Serializable, Arg.Any<CancellationToken>()).Returns(tx);
+        var clock = Substitute.For<IClock>();
+        clock.UtcNow.Returns(FixedNow);
+
+        var handler = new VoidChargeCommandHandler(chargeRepo, leaseRepo, uow, clock);
+
+        var badRowVersionRes = await handler.Handle(
+            new VoidChargeCommand(orgId, charge.Id, "Bad token", RowVersion: "not-base64!"),
+            CancellationToken.None);
+
+        Assert.True(badRowVersionRes.IsFailure);
+        Assert.Equal("Charge.InvalidRowVersion", badRowVersionRes.Errors.First().Code);
+        await leaseRepo.Received(1).AcquireUnitLockAsync(charge.UnitId, orgId, Arg.Any<CancellationToken>());
+        await tx.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ApplyAdjustment_WhenFullCreditZeroesBalanceOnIssuedOrOverdueInvoice_ShouldTransitionToPaid()
+    {
+        var orgId = Guid.NewGuid();
+        var actorId = Guid.NewGuid();
+        var issuedInvoice = CreateSampleDraftInvoice(orgId, Guid.NewGuid(), Guid.NewGuid(), amount: 5000m);
+        issuedInvoice.Issue("INV-2026-000010", new DateOnly(2026, 3, 1), FixedNow);
+
+        var overdueInvoice = CreateSampleDraftInvoice(orgId, Guid.NewGuid(), Guid.NewGuid(), amount: 4000m);
+        overdueInvoice.Issue("INV-2026-000011", new DateOnly(2026, 3, 1), FixedNow);
+        overdueInvoice.MarkOverdue(new DateOnly(2026, 3, 10), FixedNow.AddDays(9));
+
+        var invoiceRepo = Substitute.For<IInvoiceRepository>();
+        invoiceRepo.GetByIdAsync(issuedInvoice.Id, orgId, Arg.Any<CancellationToken>()).Returns(issuedInvoice);
+        invoiceRepo.GetByIdAsync(overdueInvoice.Id, orgId, Arg.Any<CancellationToken>()).Returns(overdueInvoice);
+        var uow = Substitute.For<IUnitOfWork>();
+        var clock = Substitute.For<IClock>();
+        clock.UtcNow.Returns(FixedNow.AddDays(10));
+
+        var handler = new ApplyInvoiceAdjustmentCommandHandler(invoiceRepo, uow, clock);
+
+        var issuedRes = await handler.Handle(
+            new ApplyInvoiceAdjustmentCommand(
+                orgId, issuedInvoice.Id, InvoiceAdjustmentType.Credit, ChargeType.CreditAdjustment,
+                5000m, "Full waiver", "Move-in credit", actorId),
+            CancellationToken.None);
+
+        Assert.True(issuedRes.IsSuccess);
+        Assert.Equal(0m, issuedRes.Value.BalanceDue);
+        Assert.Equal(InvoiceStatus.Paid, issuedRes.Value.Status);
+
+        var overdueRes = await handler.Handle(
+            new ApplyInvoiceAdjustmentCommand(
+                orgId, overdueInvoice.Id, InvoiceAdjustmentType.Credit, ChargeType.Discount,
+                4000m, "Full overdue waiver", "Settlement agreement", actorId),
+            CancellationToken.None);
+
+        Assert.True(overdueRes.IsSuccess);
+        Assert.Equal(0m, overdueRes.Value.BalanceDue);
+        Assert.Equal(InvoiceStatus.Paid, overdueRes.Value.Status);
+    }
+
+    [Fact]
+    public async Task GetInvoicesQuery_ShouldUseSummaryProjectionFlags_AndIssueDateYearValidation()
+    {
+        var orgId = Guid.NewGuid();
+        var invoice = CreateSampleDraftInvoice(orgId, Guid.NewGuid(), Guid.NewGuid());
+        var invoiceRepo = Substitute.For<IInvoiceRepository>();
+        invoiceRepo.GetPagedAsync(Arg.Any<InvoiceFilter>(), Arg.Any<CancellationToken>())
+            .Returns(([invoice], 1));
+
+        var handler = new GetInvoicesQueryHandler(invoiceRepo);
+        var res = await handler.Handle(new GetInvoicesQuery(orgId), CancellationToken.None);
+
+        Assert.True(res.IsSuccess);
+        await invoiceRepo.Received(1).GetPagedAsync(
+            Arg.Is<InvoiceFilter>(f => !f.IncludeDetails && f.AsNoTracking),
+            Arg.Any<CancellationToken>());
+
+        var genVal = new GenerateLeaseInvoiceCommandValidator();
+        var badGenYear = genVal.TestValidate(new GenerateLeaseInvoiceCommand(
+            orgId, Guid.NewGuid(), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31),
+            IssueDate: new DateOnly(1999, 12, 31)));
+        badGenYear.ShouldHaveValidationErrorFor(x => x.IssueDate);
+
+        var issueVal = new IssueInvoiceCommandValidator();
+        var badIssueYear = issueVal.TestValidate(new IssueInvoiceCommand(
+            orgId, Guid.NewGuid(), IssueDate: new DateOnly(1999, 12, 31)));
+        badIssueYear.ShouldHaveValidationErrorFor(x => x.IssueDate);
     }
 }

@@ -21,7 +21,7 @@ public sealed class CreateDraftLeaseCommandHandler(
     ILeaseRepository leaseRepository,
     IUnitOfWork unitOfWork,
     IClock clock,
-    IOrganizationRepository? organizationRepository = null) : IRequestHandler<CreateDraftLeaseCommand, Result<LeaseResponse>>
+    IOrganizationRepository organizationRepository) : IRequestHandler<CreateDraftLeaseCommand, Result<LeaseResponse>>
 {
     public async Task<Result<LeaseResponse>> Handle(CreateDraftLeaseCommand request, CancellationToken cancellationToken)
     {
@@ -92,14 +92,10 @@ public sealed class CreateDraftLeaseCommandHandler(
         {
             effectiveCurrency = CurrencyCode.Normalize(request.Currency);
         }
-        else if (organizationRepository is not null)
+        else
         {
             var org = await organizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
             effectiveCurrency = org?.DefaultCurrency ?? CurrencyCode.Default;
-        }
-        else
-        {
-            effectiveCurrency = CurrencyCode.Default;
         }
 
         var terms = new LeaseFinancialTerms(

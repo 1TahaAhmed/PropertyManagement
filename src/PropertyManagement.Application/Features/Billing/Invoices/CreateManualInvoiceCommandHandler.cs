@@ -34,6 +34,7 @@ public sealed class CreateManualInvoiceCommandHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await leaseRepository.AcquireUnitLockAsync(initialLease.UnitId, request.OrganizationId, cancellationToken);
 
+        leaseRepository.Detach(initialLease);
         var lease = await leaseRepository.GetByIdAsync(request.LeaseId, request.OrganizationId, cancellationToken);
         if (lease is null || lease.OrganizationId != request.OrganizationId)
         {

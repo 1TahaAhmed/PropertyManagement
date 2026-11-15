@@ -93,7 +93,13 @@ public sealed class PreviewBillingQueryHandler(
             alreadyBilled = await invoiceRepository.ExistsActiveByIdempotencyKeyAsync(
                 idempotencyKey,
                 request.OrganizationId,
-                cancellationToken);
+                cancellationToken)
+                || await invoiceRepository.ExistsActiveRentOverlapAsync(
+                    lease.Id,
+                    request.OrganizationId,
+                    request.PeriodStart,
+                    request.PeriodEnd,
+                    cancellationToken);
         }
 
         var response = new BillingPreviewResponse(

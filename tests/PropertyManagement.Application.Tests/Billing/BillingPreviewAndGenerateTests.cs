@@ -235,4 +235,106 @@ public sealed class BillingPreviewAndGenerateTests
         Assert.Equal("Lease.NotBillable", result.Errors.First().Code);
         Assert.Equal(ErrorType.Validation, result.Errors.First().Type);
     }
+
+    [Fact]
+    public async Task GenerateLeaseInvoice_WithCustomIdempotencyKey_WhenRentPeriodOverlaps_ShouldReturnRentAlreadyBilledConflict()
+    {
+        var orgId = Guid.NewGuid();
+        var lease = CreateActiveLease(orgId);
+
+        var leaseRepo = Substitute.For<ILeaseRepository>();
+        leaseRepo.GetByIdAsync(lease.Id, orgId, Arg.Any<CancellationToken>()).Returns(lease);
+        var chargeRepo = Substitute.For<IChargeRepository>();
+        var invoiceRepo = Substitute.For<IInvoiceRepository>();
+        invoiceRepo.ExistsActiveByIdempotencyKeyAsync("custom-key-2", orgId, Arg.Any<CancellationToken>()).Returns(false);
+        invoiceRepo.ExistsActiveRentOverlapAsync(lease.Id, orgId, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 30), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var numberGenerator = Substitute.For<IInvoiceNumberGenerator>();
+        var uow = Substitute.For<IUnitOfWork>();
+        var tx = Substitute.For<PropertyManagement.Application.Abstractions.IDbTransaction>();
+        uow.BeginTransactionAsync(IsolationLevel.Serializable, Arg.Any<CancellationToken>()).Returns(tx);
+        var clock = Substitute.For<IClock>();
+        clock.UtcNow.Returns(FixedNow);
+
+        var handler = new GenerateLeaseInvoiceCommandHandler(
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+
+        var result = await handler.Handle(
+            new GenerateLeaseInvoiceCommand(
+                orgId,
+                lease.Id,
+                new DateOnly(2026, 3, 1),
+                new DateOnly(2026, 3, 30),
+                IdempotencyKey: "custom-key-2"),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Billing.RentAlreadyBilled", result.Errors.First().Code);
+        Assert.Equal(ErrorType.Conflict, result.Errors.First().Type);
+        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await tx.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PreviewBilling_WhenRentPeriodOverlaps_ShouldReportAlreadyBilledForPeriod()
+    {
+        var orgId = Guid.NewGuid();
+        var lease = CreateActiveLease(orgId);
+
+        var leaseRepo = Substitute.For<ILeaseRepository>();
+        leaseRepo.GetByIdAsync(lease.Id, orgId, Arg.Any<CancellationToken>()).Returns(lease);
+        var chargeRepo = Substitute.For<IChargeRepository>();
+        chargeRepo.GetPendingByLeaseAsync(lease.Id, orgId, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([]);
+        var invoiceRepo = Substitute.For<IInvoiceRepository>();
+        invoiceRepo.ExistsActiveByIdempotencyKeyAsync(Arg.Any<string>(), orgId, Arg.Any<CancellationToken>()).Returns(false);
+        invoiceRepo.ExistsActiveRentOverlapAsync(lease.Id, orgId, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 30), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var clock = Substitute.For<IClock>();
+        clock.UtcNow.Returns(FixedNow);
+
+        var handler = new PreviewBillingQueryHandler(leaseRepo, chargeRepo, invoiceRepo, _engine, clock);
+        var result = await handler.Handle(
+            new PreviewBillingQuery(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 30)),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value.AlreadyBilledForPeriod);
+    }
+
+    [Fact]
+    public async Task GenerateLeaseInvoice_WhenAutoIssueThrowsDomainOrRangeError_ShouldReturnValidationFailure()
+    {
+        var orgId = Guid.NewGuid();
+        var lease = CreateActiveLease(orgId);
+
+        var leaseRepo = Substitute.For<ILeaseRepository>();
+        leaseRepo.GetByIdAsync(lease.Id, orgId, Arg.Any<CancellationToken>()).Returns(lease);
+        var chargeRepo = Substitute.For<IChargeRepository>();
+        chargeRepo.GetPendingByLeaseAsync(lease.Id, orgId, Arg.Any<DateOnly>(), Arg.Any<CancellationToken>()).Returns([]);
+        var invoiceRepo = Substitute.For<IInvoiceRepository>();
+        var numberGenerator = Substitute.For<IInvoiceNumberGenerator>();
+        numberGenerator.GenerateNextAsync(orgId, 2026, Arg.Any<CancellationToken>())
+            .Returns<Task<string>>(_ => throw new ArgumentOutOfRangeException("year"));
+
+        var uow = Substitute.For<IUnitOfWork>();
+        var tx = Substitute.For<PropertyManagement.Application.Abstractions.IDbTransaction>();
+        uow.BeginTransactionAsync(IsolationLevel.Serializable, Arg.Any<CancellationToken>()).Returns(tx);
+        var clock = Substitute.For<IClock>();
+        clock.UtcNow.Returns(FixedNow);
+
+        var handler = new GenerateLeaseInvoiceCommandHandler(
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+
+        var result = await handler.Handle(
+            new GenerateLeaseInvoiceCommand(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), AutoIssue: true),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Invoice.IssueError", result.Errors.First().Code);
+        Assert.Equal(ErrorType.Validation, result.Errors.First().Type);
+        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        await tx.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
 }

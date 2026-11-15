@@ -18,6 +18,7 @@ public sealed class VoidInvoiceCommandHandler(
     public async Task<Result<InvoiceResponse>> Handle(VoidInvoiceCommand request, CancellationToken cancellationToken)
     {
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await invoiceRepository.AcquireInvoiceLockAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
 
         var invoice = await invoiceRepository.GetByIdAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
         if (invoice is null || invoice.OrganizationId != request.OrganizationId)

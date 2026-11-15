@@ -1,3 +1,4 @@
+using PropertyManagement.Application.Abstractions.Billing;
 using MediatR;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -445,5 +446,53 @@ public sealed class BillingPersistenceIntegrationTests
             // Because transaction rolled back, 000001 is available again with zero gaps
             Assert.Equal("INV-2026-000001", await gen.GenerateNextAsync(orgId, 2026));
         }
+    }
+
+    [Fact]
+    public async Task InvoiceRepository_ExistsActiveRentOverlap_AndSummaryPaging_ShouldWorkAccurately()
+    {
+        await using var connection = new SqliteConnection("DataSource=:memory:");
+        await connection.OpenAsync();
+
+        var utcNow = new DateTime(2026, 3, 1, 10, 0, 0, DateTimeKind.Utc);
+        var currentUser = new TestCurrentUser { UserId = Guid.NewGuid(), Role = "Owner" };
+        var (orgId, propertyId, unitId, residentId, leaseId) = await SeedLeaseGraphAsync(connection, currentUser, utcNow);
+
+        var options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(connection).Options;
+        await using var ctx = new SqliteRelationalApplicationDbContext(options, currentUser);
+        var repo = new InvoiceRepository(ctx);
+
+        // Non-rent utility invoice should NOT block rent overlap
+        var utilityInvoice = Invoice.CreateDraft(
+            orgId, leaseId, propertyId, unitId, residentId,
+            BillingPeriod.ForMonth(2026, 3), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 5), "EGP", utcNow);
+        utilityInvoice.AddLine(ChargeType.Utility, "Water", 1m, 200m, utcNow);
+        await repo.AddAsync(utilityInvoice);
+        await ctx.SaveChangesAsync();
+
+        Assert.False(await repo.ExistsActiveRentOverlapAsync(leaseId, orgId, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)));
+
+        // Active rent invoice blocks exact and partial overlapping periods
+        var rentInvoice = Invoice.CreateDraft(
+            orgId, leaseId, propertyId, unitId, residentId,
+            BillingPeriod.ForMonth(2026, 3), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 5), "EGP", utcNow);
+        rentInvoice.AddLine(ChargeType.Rent, "March Rent", 1m, 12000m, utcNow);
+        await repo.AddAsync(rentInvoice);
+        await ctx.SaveChangesAsync();
+
+        Assert.True(await repo.ExistsActiveRentOverlapAsync(leaseId, orgId, new DateOnly(2026, 3, 15), new DateOnly(2026, 4, 10)));
+        Assert.False(await repo.ExistsActiveRentOverlapAsync(leaseId, orgId, new DateOnly(2026, 4, 1), new DateOnly(2026, 4, 30)));
+
+        // Summary query with IncludeDetails: false, AsNoTracking: true returns rows cleanly
+        var (summaryItems, total) = await repo.GetPagedAsync(
+            new InvoiceFilter(orgId, IncludeDetails: false, AsNoTracking: true));
+        Assert.Equal(2, total);
+        Assert.Equal(2, summaryItems.Count);
+        Assert.Empty(summaryItems[0].Lines);
+
+        // Voiding rent invoice clears overlap lock
+        rentInvoice.Void("Replaced", utcNow.AddMinutes(5));
+        await ctx.SaveChangesAsync();
+        Assert.False(await repo.ExistsActiveRentOverlapAsync(leaseId, orgId, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)));
     }
 }

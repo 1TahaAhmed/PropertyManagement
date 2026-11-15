@@ -1,3 +1,4 @@
+using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
 using PropertyManagement.Application.Abstractions.Billing;
@@ -18,10 +19,17 @@ public sealed class MarkOverdueInvoicesCommandHandler(
     {
         var utcNow = clock.UtcNow;
         var effectiveAsOfDate = request.AsOfDate ?? DateOnly.FromDateTime(utcNow);
+        if (effectiveAsOfDate == DateOnly.MinValue)
+        {
+            return Result<MarkOverdueInvoicesResponse>.Success(new MarkOverdueInvoicesResponse(0, []));
+        }
+
         var dueBefore = effectiveAsOfDate.AddDays(-1);
 
         var markedIds = new List<Guid>();
         const int pageSize = 200;
+
+        await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
 
         foreach (var candidateStatus in new[] { InvoiceStatus.Issued, InvoiceStatus.PartiallyPaid })
         {
@@ -34,7 +42,9 @@ public sealed class MarkOverdueInvoicesCommandHandler(
                         Status: candidateStatus,
                         DueBefore: dueBefore,
                         PageNumber: pageNumber,
-                        PageSize: pageSize),
+                        PageSize: pageSize,
+                        IncludeDetails: false,
+                        AsNoTracking: false),
                     cancellationToken);
 
                 foreach (var invoice in items)
@@ -61,6 +71,7 @@ public sealed class MarkOverdueInvoicesCommandHandler(
         if (markedIds.Count > 0)
         {
             await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
 
         return Result<MarkOverdueInvoicesResponse>.Success(

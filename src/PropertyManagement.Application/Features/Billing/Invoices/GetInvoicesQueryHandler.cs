@@ -23,7 +23,9 @@ public sealed class GetInvoicesQueryHandler(
             PeriodEnd: request.PeriodEnd,
             InvoiceNumber: request.InvoiceNumber,
             PageNumber: request.PageNumber,
-            PageSize: request.PageSize);
+            PageSize: request.PageSize,
+            IncludeDetails: false,
+            AsNoTracking: true);
 
         var (items, totalCount) = await invoiceRepository.GetPagedAsync(filter, cancellationToken);
 
