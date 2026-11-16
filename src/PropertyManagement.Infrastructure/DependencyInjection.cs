@@ -85,7 +85,9 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 
             var jwtSection = configuration.GetSection(JwtOptions.SectionName);
+
             var secretKey = jwtSection["Secret"];
+
             if (string.IsNullOrWhiteSpace(secretKey) || secretKey.Length < 32)
             {
                 throw new InvalidOperationException(

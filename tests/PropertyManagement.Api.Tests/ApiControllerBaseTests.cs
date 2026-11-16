@@ -45,14 +45,12 @@ public class ApiControllerBaseTests
     [Fact]
     public void TryGetOrganizationId_WhenOrgIdNull_ReturnsFalseAndUnauthorizedProblemDetails()
     {
-        // Arrange
         var controller = new TestController();
+
         var currentUser = new FakeCurrentUser(null);
 
-        // Act
         var result = controller.CheckOrg(currentUser, out var orgId, out var errorResult);
-
-        // Assert
+       
         Assert.False(result);
         Assert.Equal(Guid.Empty, orgId);
         var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(errorResult);

@@ -7,7 +7,9 @@ namespace PropertyManagement.Domain.Entities.Billing;
 public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
 {
     private readonly List<InvoiceLine> _lines = [];
+
     private readonly List<InvoiceAdjustment> _adjustments = [];
+
     private readonly List<IDomainEvent> _domainEvents = [];
 
     private Invoice() { }
