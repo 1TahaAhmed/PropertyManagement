@@ -60,16 +60,16 @@ function initials(value: string): string {
   return (value || "PM").split(/[\\s@._-]+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 }
 
-function statusTone(value: any): string {
-  const key = String(value ?? "").toLowerCase();
-  if (/active|paid|succeeded|posted|processed|matched/.test(key) || ["1", "3"].includes(key)) return "good";
-  if (/pending|draft|partial|processing|maintenance/.test(key) || ["2", "5"].includes(key)) return "warn";
-  if (/failed|overdue|void|cancel|blacklist|terminated|expired|archived/.test(key) || ["4", "6", "7"].includes(key)) return "bad";
+function statusTone(value: any, map?: string): string {
+  const key = (map && enumLabels[map]?.[String(value)] || String(value ?? "")).replace(/\\s+/g, "").toLowerCase();
+  if (["active", "paid", "succeeded", "posted", "processed", "matched"].includes(key)) return "good";
+  if (["pending", "draft", "pendingapproval", "partiallypaid", "partiallyrefunded", "processing", "undermaintenance", "issued"].includes(key)) return "warn";
+  if (["failed", "overdue", "blacklisted", "terminated", "expired"].includes(key)) return "bad";
   return "neutral";
 }
 
 function Badge({ value, map }: { value: any; map?: string }) {
-  return <span className={"status-badge " + statusTone(value)}><i />{text(value, map)}</span>;
+  return <span className={"status-badge " + statusTone(value, map)}><i />{text(value, map)}</span>;
 }
 
 function errorText(error: unknown): string {
