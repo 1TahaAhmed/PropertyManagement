@@ -1,7 +1,9 @@
 using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
@@ -18,6 +20,9 @@ public sealed class GenerateLeaseInvoiceCommandHandler(
     IInvoiceRepository invoiceRepository,
     IInvoiceNumberGenerator invoiceNumberGenerator,
     IBillingCalculationEngine calculationEngine,
+    ILedgerRepository ledgerRepository,
+    IJournalEntryNumberGenerator journalEntryNumberGenerator,
+    IFinancialAuditLogRepository auditRepository,
     IUnitOfWork unitOfWork,
     IClock clock) : IRequestHandler<GenerateLeaseInvoiceCommand, Result<InvoiceResponse>>
 {
@@ -173,6 +178,14 @@ public sealed class GenerateLeaseInvoiceCommandHandler(
                     cancellationToken);
 
                 invoice.Issue(invoiceNumber, calculationResult.IssueDate, utcNow);
+                await BillingLedgerHelper.PostInvoiceIssuedIfNeededAsync(
+                    invoice,
+                    ledgerRepository,
+                    journalEntryNumberGenerator,
+                    auditRepository,
+                    actorUserId: null,
+                    utcNow,
+                    cancellationToken);
             }
             catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
             {

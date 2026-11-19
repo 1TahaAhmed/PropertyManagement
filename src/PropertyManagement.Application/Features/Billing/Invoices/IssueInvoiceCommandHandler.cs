@@ -1,9 +1,12 @@
 using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Billing.Common;
 using PropertyManagement.Application.Features.Billing.Responses;
 using PropertyManagement.Domain.Enums;
 
@@ -12,6 +15,9 @@ namespace PropertyManagement.Application.Features.Billing.Invoices;
 public sealed class IssueInvoiceCommandHandler(
     IInvoiceRepository invoiceRepository,
     IInvoiceNumberGenerator invoiceNumberGenerator,
+    ILedgerRepository ledgerRepository,
+    IJournalEntryNumberGenerator journalEntryNumberGenerator,
+    IFinancialAuditLogRepository auditRepository,
     IUnitOfWork unitOfWork,
     IClock clock) : IRequestHandler<IssueInvoiceCommand, Result<InvoiceResponse>>
 {
@@ -19,7 +25,6 @@ public sealed class IssueInvoiceCommandHandler(
     {
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await invoiceRepository.AcquireInvoiceLockAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
-
         var invoice = await invoiceRepository.GetByIdAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
         if (invoice is null || invoice.OrganizationId != request.OrganizationId)
         {
@@ -54,14 +59,12 @@ public sealed class IssueInvoiceCommandHandler(
 
         var utcNow = clock.UtcNow;
         var issueDate = request.IssueDate ?? invoice.IssueDate;
-
         try
         {
             var invoiceNumber = await invoiceNumberGenerator.GenerateNextAsync(
                 request.OrganizationId,
                 issueDate.Year,
                 cancellationToken);
-
             invoice.Issue(invoiceNumber, issueDate, utcNow);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
@@ -71,6 +74,15 @@ public sealed class IssueInvoiceCommandHandler(
                 Message: ex.Message,
                 Type: ErrorType.Validation));
         }
+
+        await BillingLedgerHelper.PostInvoiceIssuedIfNeededAsync(
+            invoice,
+            ledgerRepository,
+            journalEntryNumberGenerator,
+            auditRepository,
+            actorUserId: null,
+            utcNow,
+            cancellationToken);
 
         invoiceRepository.Update(invoice);
         await unitOfWork.SaveChangesAsync(cancellationToken);

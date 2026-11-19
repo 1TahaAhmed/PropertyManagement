@@ -137,8 +137,8 @@ public sealed class PaymentRepository(ApplicationDbContext context) : IPaymentRe
             .AsNoTracking()
             .Where(p => p.OrganizationId == organizationId &&
                         p.Provider == provider &&
-                        p.CreatedAtUtc >= fromUtc &&
-                        p.CreatedAtUtc <= toUtc)
+                        (p.SettledAtUtc ?? p.ReceivedAtUtc ?? p.CreatedAtUtc) >= fromUtc &&
+                        (p.SettledAtUtc ?? p.ReceivedAtUtc ?? p.CreatedAtUtc) <= toUtc)
             .ToListAsync(cancellationToken);
     }
 

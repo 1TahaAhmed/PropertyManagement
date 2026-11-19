@@ -125,7 +125,8 @@ public sealed class RefundPaymentCommandHandler(
                     refund.Amount,
                     refund.Currency,
                     refund.Reason,
-                    request.IdempotencyKey ?? refund.Id.ToString("N")),
+                    request.IdempotencyKey ?? refund.Id.ToString("N"),
+                    payment.ProviderTransactionId),
                 cancellationToken);
 
             if (!providerResult.CallSucceeded)

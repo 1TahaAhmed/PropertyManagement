@@ -2,7 +2,9 @@ using System.Data;
 using FluentValidation.TestHelper;
 using NSubstitute;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Features.Billing.Charges;
@@ -107,7 +109,11 @@ public sealed class InvoiceLifecycleAndChargesTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(FixedNow);
 
-        var handler = new CreateManualInvoiceCommandHandler(leaseRepo, chargeRepo, invoiceRepo, numberGenerator, uow, clock);
+        var ledgerRepo = Substitute.For<ILedgerRepository>();
+        var jeNumberGen = Substitute.For<IJournalEntryNumberGenerator>();
+        jeNumberGen.GenerateNextAsync(orgId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns("JE-2026-000001");
+        var auditRepo = Substitute.For<IFinancialAuditLogRepository>();
+        var handler = new CreateManualInvoiceCommandHandler(leaseRepo, chargeRepo, invoiceRepo, numberGenerator, ledgerRepo, jeNumberGen, auditRepo, uow, clock);
         var result = await handler.Handle(
             new CreateManualInvoiceCommand(
                 orgId,
@@ -125,6 +131,10 @@ public sealed class InvoiceLifecycleAndChargesTests
         Assert.Equal("INV-2026-000100", result.Value.InvoiceNumber);
         Assert.Equal(350m, result.Value.Total);
         Assert.Equal(ChargeStatus.Billed, pendingCharge.Status);
+        await ledgerRepo.Received(1).AddAsync(
+            Arg.Is<PropertyManagement.Domain.Entities.Ledger.JournalEntry>(j =>
+                j.SourceType == "InvoiceIssued" && j.TotalDebits == 350m && j.TotalCredits == 350m),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -149,15 +159,25 @@ public sealed class InvoiceLifecycleAndChargesTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(FixedNow);
 
-        var issueHandler = new IssueInvoiceCommandHandler(invoiceRepo, numberGenerator, uow, clock);
+        var ledgerRepo = Substitute.For<ILedgerRepository>();
+        var jeNumberGen = Substitute.For<IJournalEntryNumberGenerator>();
+        jeNumberGen.GenerateNextAsync(orgId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns("JE-2026-000001", "JE-2026-000002");
+        var auditRepo = Substitute.For<IFinancialAuditLogRepository>();
+        var issueHandler = new IssueInvoiceCommandHandler(invoiceRepo, numberGenerator, ledgerRepo, jeNumberGen, auditRepo, uow, clock);
         var issueRes = await issueHandler.Handle(new IssueInvoiceCommand(orgId, invoice.Id), CancellationToken.None);
         Assert.True(issueRes.IsSuccess);
         Assert.Equal(InvoiceStatus.Issued, issueRes.Value.Status);
         Assert.Equal("INV-2026-000001", issueRes.Value.InvoiceNumber);
 
-        var voidHandler = new VoidInvoiceCommandHandler(invoiceRepo, chargeRepo, uow, clock);
+        var voidHandler = new VoidInvoiceCommandHandler(invoiceRepo, chargeRepo, ledgerRepo, jeNumberGen, auditRepo, uow, clock);
         var voidRes = await voidHandler.Handle(new VoidInvoiceCommand(orgId, invoice.Id, "Issued in error"), CancellationToken.None);
         Assert.True(voidRes.IsSuccess);
+        await ledgerRepo.Received(1).AddAsync(
+            Arg.Is<PropertyManagement.Domain.Entities.Ledger.JournalEntry>(j => j.SourceType == "InvoiceIssued" && j.TotalDebits == j.TotalCredits),
+            Arg.Any<CancellationToken>());
+        await ledgerRepo.Received(1).AddAsync(
+            Arg.Is<PropertyManagement.Domain.Entities.Ledger.JournalEntry>(j => j.SourceType == "InvoiceVoided" && j.TotalDebits == j.TotalCredits),
+            Arg.Any<CancellationToken>());
         Assert.Equal(InvoiceStatus.Void, voidRes.Value.Status);
         Assert.Equal(0m, voidRes.Value.BalanceDue);
         Assert.Equal(ChargeStatus.Pending, billedCharge.Status);
@@ -177,7 +197,11 @@ public sealed class InvoiceLifecycleAndChargesTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(FixedNow.AddDays(10));
 
-        var handler = new ApplyInvoiceAdjustmentCommandHandler(invoiceRepo, uow, clock);
+        var ledgerRepo = Substitute.For<ILedgerRepository>();
+        var jeNumberGen = Substitute.For<IJournalEntryNumberGenerator>();
+        jeNumberGen.GenerateNextAsync(orgId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns("JE-2026-000010", "JE-2026-000011");
+        var auditRepo = Substitute.For<IFinancialAuditLogRepository>();
+        var handler = new ApplyInvoiceAdjustmentCommandHandler(invoiceRepo, ledgerRepo, jeNumberGen, auditRepo, uow, clock);
         var actorId = Guid.NewGuid();
 
         var lateFeeRes = await handler.Handle(
@@ -335,7 +359,11 @@ public sealed class InvoiceLifecycleAndChargesTests
         var clock = Substitute.For<IClock>();
         clock.UtcNow.Returns(FixedNow.AddDays(10));
 
-        var handler = new ApplyInvoiceAdjustmentCommandHandler(invoiceRepo, uow, clock);
+        var ledgerRepo = Substitute.For<ILedgerRepository>();
+        var jeNumberGen = Substitute.For<IJournalEntryNumberGenerator>();
+        jeNumberGen.GenerateNextAsync(orgId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns("JE-2026-000010", "JE-2026-000011");
+        var auditRepo = Substitute.For<IFinancialAuditLogRepository>();
+        var handler = new ApplyInvoiceAdjustmentCommandHandler(invoiceRepo, ledgerRepo, jeNumberGen, auditRepo, uow, clock);
 
         var issuedRes = await handler.Handle(
             new ApplyInvoiceAdjustmentCommand(

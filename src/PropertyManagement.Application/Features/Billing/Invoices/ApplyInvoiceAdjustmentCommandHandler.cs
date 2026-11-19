@@ -1,15 +1,22 @@
 using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Billing.Common;
 using PropertyManagement.Application.Features.Billing.Responses;
+using PropertyManagement.Domain.Entities.Billing;
 
 namespace PropertyManagement.Application.Features.Billing.Invoices;
 
 public sealed class ApplyInvoiceAdjustmentCommandHandler(
     IInvoiceRepository invoiceRepository,
+    ILedgerRepository ledgerRepository,
+    IJournalEntryNumberGenerator journalEntryNumberGenerator,
+    IFinancialAuditLogRepository auditRepository,
     IUnitOfWork unitOfWork,
     IClock clock) : IRequestHandler<ApplyInvoiceAdjustmentCommand, Result<InvoiceResponse>>
 {
@@ -17,7 +24,6 @@ public sealed class ApplyInvoiceAdjustmentCommandHandler(
     {
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await invoiceRepository.AcquireInvoiceLockAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
-
         var invoice = await invoiceRepository.GetByIdAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
         if (invoice is null || invoice.OrganizationId != request.OrganizationId)
         {
@@ -42,16 +48,18 @@ public sealed class ApplyInvoiceAdjustmentCommandHandler(
             }
         }
 
+        var utcNow = clock.UtcNow;
+        InvoiceAdjustment adjustment;
         try
         {
-            invoice.ApplyAdjustment(
+            adjustment = invoice.ApplyAdjustment(
                 request.Type,
                 request.ChargeType,
                 request.Amount,
                 request.Description,
                 request.Reason,
                 request.ActorUserId,
-                clock.UtcNow);
+                utcNow);
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
         {
@@ -60,6 +68,16 @@ public sealed class ApplyInvoiceAdjustmentCommandHandler(
                 Message: ex.Message,
                 Type: ErrorType.Validation));
         }
+
+        await BillingLedgerHelper.PostInvoiceAdjustedIfNeededAsync(
+            invoice,
+            adjustment,
+            ledgerRepository,
+            journalEntryNumberGenerator,
+            auditRepository,
+            request.ActorUserId,
+            utcNow,
+            cancellationToken);
 
         invoiceRepository.Update(invoice);
         await unitOfWork.SaveChangesAsync(cancellationToken);

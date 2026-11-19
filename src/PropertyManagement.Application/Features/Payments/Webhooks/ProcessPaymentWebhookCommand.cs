@@ -165,6 +165,21 @@ public sealed class ProcessPaymentWebhookCommandHandler(
                     utcNow,
                     cancellationToken);
             }
+            else if (payment.Status is PaymentStatus.Succeeded or PaymentStatus.PartiallyRefunded or PaymentStatus.Refunded &&
+                     verification.FeeAmount.HasValue &&
+                     !payment.SettledAtUtc.HasValue &&
+                     payment.Provider != PaymentProviderType.Manual)
+            {
+                payment.RecordSettlement(verification.FeeAmount.Value, verification.EventTimestampUtc, utcNow);
+                var settleKey = $"settle:{payment.Id}";
+                if (!await ledgerRepository.ExistsByIdempotencyKeyAsync(
+                        payment.OrganizationId, "PaymentSettled", payment.Id, settleKey, cancellationToken))
+                {
+                    var jeNumber = await journalEntryNumberGenerator.GenerateNextAsync(payment.OrganizationId, utcNow, cancellationToken);
+                    var je = LedgerPostingService.CreateProviderSettlementEntry(payment, jeNumber, settleKey, utcNow);
+                    await ledgerRepository.AddAsync(je, cancellationToken);
+                }
+            }
         }
         else if (normalizedEventType is "payment.failed" or "payment_intent.payment_failed" or "charge.failed")
         {
@@ -226,8 +241,27 @@ public sealed class ProcessPaymentWebhookCommandHandler(
             correlationId: verification.EventId,
             cancellationToken);
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception)
+        {
+            if (await webhookEventRepository.GetByProviderEventIdAsync(request.Provider, verification.EventId, cancellationToken) is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return Result<WebhookProcessingResponse>.Success(new WebhookProcessingResponse(
+                    verification.EventId,
+                    request.Provider,
+                    WebhookEventStatus.IgnoredDuplicate,
+                    IsDuplicate: true,
+                    PaymentId: payment.Id,
+                    Message: "Webhook event has already been processed."));
+            }
+
+            throw;
+        }
 
         return Result<WebhookProcessingResponse>.Success(new WebhookProcessingResponse(
             verification.EventId,

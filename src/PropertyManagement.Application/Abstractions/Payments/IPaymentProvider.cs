@@ -51,7 +51,8 @@ public sealed record ProviderRefundRequest(
     decimal Amount,
     string Currency,
     string Reason,
-    string IdempotencyKey);
+    string IdempotencyKey,
+    string? ProviderTransactionId = null);
 
 public sealed record ProviderRefundResult(
     bool CallSucceeded,

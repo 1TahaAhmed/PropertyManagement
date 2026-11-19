@@ -1,9 +1,12 @@
 using System.Data;
 using MediatR;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Common.Results;
+using PropertyManagement.Application.Features.Billing.Common;
 using PropertyManagement.Application.Features.Billing.Responses;
 using PropertyManagement.Domain.Enums;
 
@@ -12,6 +15,9 @@ namespace PropertyManagement.Application.Features.Billing.Invoices;
 public sealed class VoidInvoiceCommandHandler(
     IInvoiceRepository invoiceRepository,
     IChargeRepository chargeRepository,
+    ILedgerRepository ledgerRepository,
+    IJournalEntryNumberGenerator journalEntryNumberGenerator,
+    IFinancialAuditLogRepository auditRepository,
     IUnitOfWork unitOfWork,
     IClock clock) : IRequestHandler<VoidInvoiceCommand, Result<InvoiceResponse>>
 {
@@ -19,7 +25,6 @@ public sealed class VoidInvoiceCommandHandler(
     {
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await invoiceRepository.AcquireInvoiceLockAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
-
         var invoice = await invoiceRepository.GetByIdAsync(request.InvoiceId, request.OrganizationId, cancellationToken);
         if (invoice is null || invoice.OrganizationId != request.OrganizationId)
         {
@@ -44,8 +49,8 @@ public sealed class VoidInvoiceCommandHandler(
             }
         }
 
+        var wasIssuedBeforeVoid = invoice.IssuedAtUtc.HasValue && invoice.Status != InvoiceStatus.Draft;
         var utcNow = clock.UtcNow;
-
         try
         {
             invoice.Void(request.Reason, utcNow);
@@ -67,6 +72,16 @@ public sealed class VoidInvoiceCommandHandler(
                 chargeRepository.Update(charge);
             }
         }
+
+        await BillingLedgerHelper.PostInvoiceVoidedIfNeededAsync(
+            invoice,
+            wasIssuedBeforeVoid,
+            ledgerRepository,
+            journalEntryNumberGenerator,
+            auditRepository,
+            actorUserId: null,
+            utcNow,
+            cancellationToken);
 
         invoiceRepository.Update(invoice);
         await unitOfWork.SaveChangesAsync(cancellationToken);

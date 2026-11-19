@@ -1,7 +1,9 @@
 using System.Data;
 using NSubstitute;
 using PropertyManagement.Application.Abstractions;
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
 using PropertyManagement.Application.Abstractions.Repositories;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Features.Billing.Common;
@@ -121,7 +123,9 @@ public sealed class BillingPreviewAndGenerateTests
         clock.UtcNow.Returns(FixedNow);
 
         var handler = new GenerateLeaseInvoiceCommandHandler(
-            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine,
+            Substitute.For<ILedgerRepository>(), Substitute.For<IJournalEntryNumberGenerator>(), Substitute.For<IFinancialAuditLogRepository>(),
+            uow, clock);
 
         var result = await handler.Handle(
             new GenerateLeaseInvoiceCommand(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)),
@@ -155,6 +159,10 @@ public sealed class BillingPreviewAndGenerateTests
         var invoiceRepo = Substitute.For<IInvoiceRepository>();
         var numberGenerator = Substitute.For<IInvoiceNumberGenerator>();
         numberGenerator.GenerateNextAsync(orgId, 2026, Arg.Any<CancellationToken>()).Returns("INV-2026-000042");
+        var ledgerRepo = Substitute.For<ILedgerRepository>();
+        var jeNumberGen = Substitute.For<IJournalEntryNumberGenerator>();
+        jeNumberGen.GenerateNextAsync(orgId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>()).Returns("JE-2026-000042");
+        var auditRepo = Substitute.For<IFinancialAuditLogRepository>();
 
         var uow = Substitute.For<IUnitOfWork>();
         var tx = Substitute.For<PropertyManagement.Application.Abstractions.IDbTransaction>();
@@ -163,7 +171,9 @@ public sealed class BillingPreviewAndGenerateTests
         clock.UtcNow.Returns(FixedNow);
 
         var handler = new GenerateLeaseInvoiceCommandHandler(
-            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine,
+            ledgerRepo, jeNumberGen, auditRepo,
+            uow, clock);
 
         var result = await handler.Handle(
             new GenerateLeaseInvoiceCommand(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), AutoIssue: true),
@@ -173,6 +183,10 @@ public sealed class BillingPreviewAndGenerateTests
         Assert.Equal(InvoiceStatus.Issued, result.Value.Status);
         Assert.Equal("INV-2026-000042", result.Value.InvoiceNumber);
         Assert.Equal(FixedNow, result.Value.IssuedAtUtc);
+        await ledgerRepo.Received(1).AddAsync(
+            Arg.Is<PropertyManagement.Domain.Entities.Ledger.JournalEntry>(j =>
+                j.SourceType == "InvoiceIssued" && j.TotalDebits == j.TotalCredits),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -196,7 +210,9 @@ public sealed class BillingPreviewAndGenerateTests
         clock.UtcNow.Returns(FixedNow);
 
         var handler = new GenerateLeaseInvoiceCommandHandler(
-            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine,
+            Substitute.For<ILedgerRepository>(), Substitute.For<IJournalEntryNumberGenerator>(), Substitute.For<IFinancialAuditLogRepository>(),
+            uow, clock);
 
         var result = await handler.Handle(
             new GenerateLeaseInvoiceCommand(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31)),
@@ -258,7 +274,9 @@ public sealed class BillingPreviewAndGenerateTests
         clock.UtcNow.Returns(FixedNow);
 
         var handler = new GenerateLeaseInvoiceCommandHandler(
-            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine,
+            Substitute.For<ILedgerRepository>(), Substitute.For<IJournalEntryNumberGenerator>(), Substitute.For<IFinancialAuditLogRepository>(),
+            uow, clock);
 
         var result = await handler.Handle(
             new GenerateLeaseInvoiceCommand(
@@ -325,7 +343,9 @@ public sealed class BillingPreviewAndGenerateTests
         clock.UtcNow.Returns(FixedNow);
 
         var handler = new GenerateLeaseInvoiceCommandHandler(
-            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine, uow, clock);
+            leaseRepo, chargeRepo, invoiceRepo, numberGenerator, _engine,
+            Substitute.For<ILedgerRepository>(), Substitute.For<IJournalEntryNumberGenerator>(), Substitute.For<IFinancialAuditLogRepository>(),
+            uow, clock);
 
         var result = await handler.Handle(
             new GenerateLeaseInvoiceCommand(orgId, lease.Id, new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 31), AutoIssue: true),

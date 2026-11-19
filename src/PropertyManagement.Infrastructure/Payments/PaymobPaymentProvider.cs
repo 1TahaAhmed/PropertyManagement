@@ -152,12 +152,15 @@ public sealed class PaymobPaymentProvider(
         }
 
         var amountCents = (long)Math.Round(request.Amount * 100m, MidpointRounding.AwayFromZero);
+        var targetTxId = !string.IsNullOrWhiteSpace(request.ProviderTransactionId)
+            ? request.ProviderTransactionId
+            : request.ProviderPaymentId;
         using var resp = await httpClient.PostAsJsonAsync(
             BuildUri(paymob.BaseUrl, "acceptance/void_refund/refund"),
             new
             {
                 auth_token = token,
-                transaction_id = request.ProviderPaymentId,
+                transaction_id = targetTxId,
                 amount_cents = amountCents
             },
             cancellationToken);
@@ -304,9 +307,14 @@ public sealed class PaymobPaymentProvider(
             return new ProviderPaymentResult(false, false, true, providerPaymentId, null, null, null, null, "Paymob authentication failed.");
         }
 
-        using var req = new HttpRequestMessage(HttpMethod.Get, BuildUri(paymob.BaseUrl, $"acceptance/transactions/{Uri.EscapeDataString(providerPaymentId)}"));
-        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        using var resp = await httpClient.SendAsync(req, cancellationToken);
+        using var resp = await httpClient.PostAsJsonAsync(
+            BuildUri(paymob.BaseUrl, "ecommerce/orders/transaction_inquiry"),
+            new
+            {
+                auth_token = token,
+                order_id = providerPaymentId
+            },
+            cancellationToken);
         var body = await resp.Content.ReadAsStringAsync(cancellationToken);
         if (!resp.IsSuccessStatusCode)
         {

@@ -41,7 +41,7 @@ public sealed class GetPaymentsQueryHandler(IPaymentRepository paymentRepository
 
         var responses = items.Select(PaymentResponse.FromEntity).ToList();
         return Result<PagedList<PaymentResponse>>.Success(
-            new PagedList<PaymentResponse>(responses, totalCount, request.PageNumber, request.PageSize));
+            new PagedList<PaymentResponse>(responses, request.PageNumber, request.PageSize, totalCount));
     }
 }
 
@@ -107,8 +107,8 @@ public sealed class GetReconciliationRecordsQueryHandler(IPaymentReconciliationR
         return Result<PagedList<ReconciliationRecordResponse>>.Success(
             new PagedList<ReconciliationRecordResponse>(
                 items.Select(ReconciliationRecordResponse.FromEntity).ToList(),
-                totalCount,
                 request.PageNumber,
-                request.PageSize));
+                request.PageSize,
+                totalCount));
     }
 }

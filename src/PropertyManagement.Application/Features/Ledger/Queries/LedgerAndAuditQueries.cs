@@ -38,9 +38,9 @@ public sealed class GetLedgerEntriesQueryHandler(ILedgerRepository ledgerReposit
         return Result<PagedList<JournalEntryResponse>>.Success(
             new PagedList<JournalEntryResponse>(
                 items.Select(JournalEntryResponse.FromEntity).ToList(),
-                totalCount,
                 request.PageNumber,
-                request.PageSize));
+                request.PageSize,
+                totalCount));
     }
 }
 
@@ -83,8 +83,8 @@ public sealed class GetFinancialAuditLogsQueryHandler(IFinancialAuditLogReposito
         return Result<PagedList<FinancialAuditLogResponse>>.Success(
             new PagedList<FinancialAuditLogResponse>(
                 items.Select(FinancialAuditLogResponse.FromEntity).ToList(),
-                totalCount,
                 request.PageNumber,
-                request.PageSize));
+                request.PageSize,
+                totalCount));
     }
 }

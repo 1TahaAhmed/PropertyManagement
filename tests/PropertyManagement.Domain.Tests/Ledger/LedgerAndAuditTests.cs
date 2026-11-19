@@ -1,4 +1,5 @@
 using PropertyManagement.Domain.Entities.Audit;
+using PropertyManagement.Domain.Entities.Billing;
 using PropertyManagement.Domain.Entities.Ledger;
 using PropertyManagement.Domain.Entities.Ledger.Events;
 using PropertyManagement.Domain.Entities.Ledger.Services;
@@ -126,5 +127,62 @@ public sealed class LedgerAndAuditTests
         Assert.Equal("Payment.Refunded", log.Action);
         Assert.Equal(actorId, log.ActorUserId);
         Assert.Equal("corr-123", log.CorrelationId);
+    }
+
+    [Fact]
+    public void LedgerPostingService_InvoiceIssue_Adjustment_Void_AndEntryReversal_ShouldBalance()
+    {
+        var orgId = Guid.NewGuid();
+        var invoice = Invoice.CreateDraft(
+            orgId,
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            BillingPeriod.ForMonth(2026, 5),
+            new DateOnly(2026, 5, 1),
+            new DateOnly(2026, 5, 10),
+            "EGP",
+            Now);
+        invoice.AddLine(ChargeType.Rent, "May Rent", 1m, 10000m, Now);
+        invoice.AddLine(ChargeType.Parking, "Parking", 1m, 500m, Now);
+        invoice.AddLine(ChargeType.Discount, "Loyalty Discount", 1m, 500m, Now);
+        invoice.Issue("INV-2026-000100", new DateOnly(2026, 5, 1), Now);
+
+        var issuedEntry = LedgerPostingService.CreateInvoiceIssuedEntry(invoice, "JE-2026-000100", "invoice-issued:1", Now);
+        Assert.Equal(10000m, issuedEntry.TotalDebits);
+        Assert.Equal(10000m, issuedEntry.TotalCredits);
+        Assert.Contains(issuedEntry.Lines, l => l.AccountCode == LedgerAccountCode.AccountsReceivable && l.Debit == 10000m);
+        Assert.Contains(issuedEntry.Lines, l => l.AccountCode == LedgerAccountCode.RentalRevenue && l.Credit == 9500m);
+        Assert.Contains(issuedEntry.Lines, l => l.AccountCode == LedgerAccountCode.OtherRevenue && l.Credit == 500m);
+
+        var lateFeeAdj = invoice.ApplyAdjustment(
+            InvoiceAdjustmentType.Debit,
+            ChargeType.LateFee,
+            500m,
+            "Late fee",
+            "Overdue",
+            Guid.NewGuid(),
+            Now.AddDays(12));
+        var adjEntry = LedgerPostingService.CreateInvoiceAdjustmentEntry(invoice, lateFeeAdj, "JE-2026-000101", "invoice-adj:1", Now.AddDays(12));
+        Assert.Equal(500m, adjEntry.TotalDebits);
+        Assert.Contains(adjEntry.Lines, l => l.AccountCode == LedgerAccountCode.AccountsReceivable && l.Debit == 500m);
+        Assert.Contains(adjEntry.Lines, l => l.AccountCode == LedgerAccountCode.LateFeeRevenue && l.Credit == 500m);
+
+        invoice.Void("Issued in error", Now.AddDays(13));
+        var voidEntry = LedgerPostingService.CreateInvoiceVoidReversalEntry(invoice, "JE-2026-000102", "invoice-void:1", Now.AddDays(13));
+        Assert.Equal(10500m, voidEntry.TotalDebits);
+        Assert.Equal(10500m, voidEntry.TotalCredits);
+        Assert.Contains(voidEntry.Lines, l => l.AccountCode == LedgerAccountCode.AccountsReceivable && l.Credit == 10500m);
+        Assert.Contains(voidEntry.Lines, l => l.AccountCode == LedgerAccountCode.RentalRevenue && l.Debit == 9500m);
+        Assert.Contains(voidEntry.Lines, l => l.AccountCode == LedgerAccountCode.OtherRevenue && l.Debit == 500m);
+        Assert.Contains(voidEntry.Lines, l => l.AccountCode == LedgerAccountCode.LateFeeRevenue && l.Debit == 500m);
+
+        var entryReversal = LedgerPostingService.CreateReversalEntry(
+            issuedEntry, "JE-2026-000103", "rev:1", "Manual correction", Now.AddDays(14));
+        Assert.Equal(10000m, entryReversal.TotalDebits);
+        Assert.Equal("JournalEntryReversal", entryReversal.SourceType);
+        Assert.Equal(issuedEntry.Id, entryReversal.SourceId);
+        Assert.Contains(entryReversal.Lines, l => l.AccountCode == LedgerAccountCode.AccountsReceivable && l.Credit == 10000m);
     }
 }

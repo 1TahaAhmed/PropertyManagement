@@ -9,6 +9,8 @@ using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Application.Common.Enums;
 using PropertyManagement.Application.Features.Payments.Reconciliation;
 using PropertyManagement.Application.Features.Payments.Refunds;
+using PropertyManagement.Application.Features.Ledger.Queries;
+using PropertyManagement.Application.Features.Payments.Queries;
 using PropertyManagement.Application.Features.Payments.Webhooks;
 using PropertyManagement.Domain.Entities.Billing;
 using PropertyManagement.Domain.Entities.Ledger;
@@ -314,5 +316,46 @@ public sealed class WebhookRefundAndReconciliationTests
 
         var webhookValidator = new ProcessPaymentWebhookCommandValidator();
         Assert.False(webhookValidator.Validate(new ProcessPaymentWebhookCommand(PaymentProviderType.Stripe, "", new Dictionary<string, string>())).IsValid);
+    }
+
+    [Fact]
+    public async Task Queries_ShouldPopulatePagedListParametersInCorrectOrder_AndRefundShouldForwardProviderTransactionId()
+    {
+        var m = CreateMocks();
+        var orgId = Guid.NewGuid();
+        var payment = Payment.Create(orgId, Guid.NewGuid(), 1500m, "EGP", PaymentMethod.Card, PaymentProviderType.Paymob, FixedNow);
+        payment.AttachExternalIdentifiers("order_8877", null, "tx_4455", "succeeded", FixedNow);
+        payment.MarkSucceeded(FixedNow, providerTransactionId: "tx_4455");
+
+        m.PayRepo.GetPagedAsync(Arg.Any<PaymentFilter>(), Arg.Any<CancellationToken>())
+            .Returns(([payment], 12));
+        var payQueryHandler = new GetPaymentsQueryHandler(m.PayRepo);
+        var pagedPay = await payQueryHandler.Handle(new GetPaymentsQuery(orgId, PageNumber: 2, PageSize: 5), CancellationToken.None);
+        Assert.True(pagedPay.IsSuccess);
+        Assert.Equal(2, pagedPay.Value.PageNumber);
+        Assert.Equal(5, pagedPay.Value.PageSize);
+        Assert.Equal(12, pagedPay.Value.TotalCount);
+        Assert.Equal(3, pagedPay.Value.TotalPages);
+
+        m.LedgerRepo.GetPagedAsync(Arg.Any<LedgerFilter>(), Arg.Any<CancellationToken>())
+            .Returns(([], 25));
+        var ledgerQueryHandler = new GetLedgerEntriesQueryHandler(m.LedgerRepo);
+        var pagedJe = await ledgerQueryHandler.Handle(new GetLedgerEntriesQuery(orgId, PageNumber: 3, PageSize: 10), CancellationToken.None);
+        Assert.Equal(3, pagedJe.Value.PageNumber);
+        Assert.Equal(10, pagedJe.Value.PageSize);
+        Assert.Equal(25, pagedJe.Value.TotalCount);
+
+        m.PayRepo.GetByIdAsync(payment.Id, orgId, Arg.Any<CancellationToken>()).Returns(payment);
+        m.ExternalProvider.RefundPaymentAsync(Arg.Any<ProviderRefundRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new ProviderRefundResult(true, true, "pm_ref_1", "refunded"));
+        var refundHandler = new RefundPaymentCommandHandler(
+            m.PayRepo, m.LedgerRepo, m.JeNumGen, m.AuditRepo, m.ProviderFactory, m.Uow, m.Clock);
+        var refundRes = await refundHandler.Handle(
+            new RefundPaymentCommand(orgId, Guid.NewGuid(), payment.Id, 500m, "Paymob refund", "pm-ref-1"),
+            CancellationToken.None);
+        Assert.True(refundRes.IsSuccess);
+        await m.ExternalProvider.Received(1).RefundPaymentAsync(
+            Arg.Is<ProviderRefundRequest>(r => r.ProviderPaymentId == "order_8877" && r.ProviderTransactionId == "tx_4455"),
+            Arg.Any<CancellationToken>());
     }
 }

@@ -16,6 +16,8 @@ public enum LedgerAccountCode
     AccountsReceivable = 1200,
     CustomerUnappliedCredit = 2100,
     RentalRevenue = 4000,
+    LateFeeRevenue = 4100,
+    OtherRevenue = 4200,
     ProcessingFeeExpense = 5100
 }
 

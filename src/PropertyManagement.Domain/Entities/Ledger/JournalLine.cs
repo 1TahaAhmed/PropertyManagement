@@ -64,6 +64,8 @@ public sealed class JournalLine : IOrganizationScoped
         LedgerAccountCode.AccountsReceivable => LedgerAccountType.Asset,
         LedgerAccountCode.CustomerUnappliedCredit => LedgerAccountType.Liability,
         LedgerAccountCode.RentalRevenue => LedgerAccountType.Revenue,
+        LedgerAccountCode.LateFeeRevenue => LedgerAccountType.Revenue,
+        LedgerAccountCode.OtherRevenue => LedgerAccountType.Revenue,
         LedgerAccountCode.ProcessingFeeExpense => LedgerAccountType.Expense,
         _ => throw new ArgumentOutOfRangeException(nameof(code), code, "Unknown ledger account code.")
     };
