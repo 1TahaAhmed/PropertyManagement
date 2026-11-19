@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   Activity, AlertCircle, ArrowUpRight, Building2, CalendarDays, CheckCircle2,
   ChevronDown, ChevronRight, CircleDollarSign, ClipboardList, CreditCard,
@@ -15,7 +15,7 @@ import {
 
 type Screen = "dashboard" | "properties" | "units" | "residents" | "leases" | "invoices" | "payments" | "ledger" | "audit";
 type Row = Record<string, any>;
-type Column = { key: string; title: string; render?: (row: Row) => React.ReactNode; align?: "right" };
+type Column = { key: string; title: string; render?: (row: Row) => ReactNode; align?: "right" };
 
 const enumLabels: Record<string, Record<string, string>> = {
   propertyType: { "1": "Residential", "2": "Commercial", "3": "Mixed use", "4": "Multi-family", "5": "Single family" },
@@ -194,7 +194,7 @@ function Login({ onSuccess }: { onSuccess: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit(event: React.FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setError("");
@@ -460,7 +460,7 @@ function Dashboard({ onNavigate }: { onNavigate: (screen: Screen) => void }) {
       return { key: d.getFullYear() + "-" + d.getMonth(), month: d.toLocaleDateString("en-US", { month: "short" }), invoiced: 0, received: 0 };
     });
     if (!data) return months;
-    const map = new Map(months.map((m, i) => [m.key, i]));
+    const map = new Map<string, number>(months.map((m, i) => [m.key, i] as const));
     data.invoices.items.forEach((r) => {
       const stamp = r.issuedAtUtc || r.createdAtUtc;
       if (!stamp) return;
