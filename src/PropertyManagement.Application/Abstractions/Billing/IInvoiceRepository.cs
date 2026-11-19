@@ -29,8 +29,11 @@ public interface IInvoiceRepository
     Task<bool> ExistsActiveRentOverlapAsync(Guid leaseId, Guid organizationId, DateOnly periodStart, DateOnly periodEnd, CancellationToken cancellationToken = default);
     Task AcquireInvoiceLockAsync(Guid invoiceId, Guid organizationId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<Invoice>> GetByLeaseIdAsync(Guid leaseId, Guid organizationId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Invoice>> GetOutstandingByResidentAsync(Guid residentId, Guid organizationId, string currency, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Invoice>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, Guid organizationId, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<Invoice> Items, int TotalCount)> GetPagedAsync(InvoiceFilter filter, CancellationToken cancellationToken = default);
     Task AddAsync(Invoice invoice, CancellationToken cancellationToken = default);
     void SetRowVersion(Invoice invoice, byte[] rowVersion);
+    void Detach(Invoice invoice);
     void Update(Invoice invoice);
 }

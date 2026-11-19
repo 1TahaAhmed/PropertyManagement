@@ -172,9 +172,61 @@ public sealed class InvoiceRepository(ApplicationDbContext context) : IInvoiceRe
         await context.Invoices.AddAsync(invoice, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Invoice>> GetOutstandingByResidentAsync(
+        Guid residentId,
+        Guid organizationId,
+        string currency,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedCurrency = currency.Trim().ToUpperInvariant();
+        return await context.Invoices
+            .Include(i => i.Lines)
+            .Include(i => i.Adjustments)
+            .Where(i => i.OrganizationId == organizationId &&
+                        i.ResidentId == residentId &&
+                        i.Currency == normalizedCurrency &&
+                        (i.Status == InvoiceStatus.Issued || i.Status == InvoiceStatus.PartiallyPaid || i.Status == InvoiceStatus.Overdue) &&
+                        i.BalanceDue > 0m)
+            .OrderBy(i => i.DueDate)
+            .ThenBy(i => i.IssueDate)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Invoice>> GetByIdsAsync(
+        IReadOnlyCollection<Guid> ids,
+        Guid organizationId,
+        CancellationToken cancellationToken = default)
+    {
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await context.Invoices
+            .Include(i => i.Lines)
+            .Include(i => i.Adjustments)
+            .Where(i => i.OrganizationId == organizationId && ids.Contains(i.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public void SetRowVersion(Invoice invoice, byte[] rowVersion)
     {
         context.Entry(invoice).Property(i => i.RowVersion).OriginalValue = rowVersion;
+    }
+
+    public void Detach(Invoice invoice)
+    {
+        foreach (var line in invoice.Lines)
+        {
+            context.Entry(line).State = EntityState.Detached;
+        }
+
+        foreach (var adj in invoice.Adjustments)
+        {
+            context.Entry(adj).State = EntityState.Detached;
+        }
+
+        context.Entry(invoice).State = EntityState.Detached;
     }
 
     public void Update(Invoice invoice)

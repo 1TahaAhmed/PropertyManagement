@@ -1,4 +1,7 @@
+using PropertyManagement.Application.Abstractions.Audit;
 using PropertyManagement.Application.Abstractions.Billing;
+using PropertyManagement.Application.Abstractions.Ledger;
+using PropertyManagement.Application.Abstractions.Payments;
 using PropertyManagement.Application.Abstractions.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +29,10 @@ using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
 using PropertyManagement.Infrastructure.Persistence;
 using PropertyManagement.Infrastructure.Persistence.Repositories;
+using PropertyManagement.Infrastructure.Persistence.Repositories.Audit;
 using PropertyManagement.Infrastructure.Persistence.Repositories.Billing;
+using PropertyManagement.Infrastructure.Persistence.Repositories.Ledger;
+using PropertyManagement.Infrastructure.Persistence.Repositories.Payments;
 
 namespace PropertyManagement.Infrastructure
 {
@@ -67,6 +73,7 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IIdentityService, IdentityService>();
             services.AddHttpContextAccessor();
             services.AddScoped<ICurrentUser, CurrentUser>();
+            services.AddScoped<ISystemTenantContext, SystemTenantContext>();
 
             services.AddOptions<JwtOptions>()
                 .Bind(configuration.GetSection(JwtOptions.SectionName))
@@ -238,6 +245,14 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<IInvoiceRepository, InvoiceRepository>();
             services.AddScoped<IChargeRepository, ChargeRepository>();
             services.AddScoped<IInvoiceNumberGenerator, InvoiceNumberGenerator>();
+            services.AddScoped<IPaymentIntentRepository, PaymentIntentRepository>();
+            services.AddScoped<IPaymentRepository, PaymentRepository>();
+            services.AddScoped<IPaymentNumberGenerator, PaymentNumberGenerator>();
+            services.AddScoped<IWebhookEventRepository, WebhookEventRepository>();
+            services.AddScoped<IPaymentReconciliationRepository, PaymentReconciliationRepository>();
+            services.AddScoped<ILedgerRepository, LedgerRepository>();
+            services.AddScoped<IJournalEntryNumberGenerator, JournalEntryNumberGenerator>();
+            services.AddScoped<IFinancialAuditLogRepository, FinancialAuditLogRepository>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
             return services;

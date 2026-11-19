@@ -7,7 +7,10 @@ using PropertyManagement.Application.Abstractions.Events;
 using PropertyManagement.Application.Abstractions.Security;
 using PropertyManagement.Domain.Common;
 using PropertyManagement.Domain.Entities.Authentication;
+using PropertyManagement.Domain.Entities.Audit;
 using PropertyManagement.Domain.Entities.Billing;
+using PropertyManagement.Domain.Entities.Ledger;
+using PropertyManagement.Domain.Entities.Payments;
 using PropertyManagement.Domain.Entities.Leases;
 using PropertyManagement.Domain.Enums;
 using PropertyManagement.Infrastructure.Persistence.Entities;
@@ -27,15 +30,18 @@ public class ApplicationDbContext :
 {
     private readonly ICurrentUser? _currentUser;
     private readonly IDomainEventDispatcher? _domainEventDispatcher;
+    private readonly ISystemTenantContext? _systemTenantContext;
 
     public ApplicationDbContext(
         DbContextOptions<ApplicationDbContext> options,
         ICurrentUser? currentUser = null,
-        IDomainEventDispatcher? domainEventDispatcher = null)
+        IDomainEventDispatcher? domainEventDispatcher = null,
+        ISystemTenantContext? systemTenantContext = null)
         : base(options)
     {
         _currentUser = currentUser;
         _domainEventDispatcher = domainEventDispatcher;
+        _systemTenantContext = systemTenantContext;
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -78,7 +84,9 @@ public class ApplicationDbContext :
         builder.Entity<Invoice>().HasQueryFilter(i =>
             i.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                 ? _currentUser.OrganizationId.Value
-                : Guid.Empty));
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
 
         builder.Entity<InvoiceLine>().HasQueryFilter(l =>
             l.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
@@ -94,6 +102,62 @@ public class ApplicationDbContext :
             c.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                 ? _currentUser.OrganizationId.Value
                 : Guid.Empty));
+
+        builder.Entity<PaymentIntent>().HasQueryFilter(pi =>
+            pi.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<Payment>().HasQueryFilter(p =>
+            p.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<PaymentAllocation>().HasQueryFilter(a =>
+            a.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<Refund>().HasQueryFilter(r =>
+            r.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<PaymentReconciliationRecord>().HasQueryFilter(r =>
+            r.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<JournalEntry>().HasQueryFilter(j =>
+            j.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<JournalLine>().HasQueryFilter(l =>
+            l.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
+
+        builder.Entity<FinancialAuditLog>().HasQueryFilter(a =>
+            a.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
+                ? _currentUser.OrganizationId.Value
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
     }
 
     public DbSet<EmailConfirmationChallenge>
@@ -119,14 +183,30 @@ public class ApplicationDbContext :
     public DbSet<InvoiceAdjustment> InvoiceAdjustments => Set<InvoiceAdjustment>();
     public DbSet<Charge> Charges => Set<Charge>();
     public DbSet<InvoiceNumberSequence> InvoiceNumberSequences => Set<InvoiceNumberSequence>();
+    public DbSet<PaymentIntent> PaymentIntents => Set<PaymentIntent>();
+    public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<PaymentAllocation> PaymentAllocations => Set<PaymentAllocation>();
+    public DbSet<Refund> Refunds => Set<Refund>();
+    public DbSet<ProcessedWebhookEvent> ProcessedWebhookEvents => Set<ProcessedWebhookEvent>();
+    public DbSet<PaymentReconciliationRecord> PaymentReconciliationRecords => Set<PaymentReconciliationRecord>();
+    public DbSet<PaymentNumberSequence> PaymentNumberSequences => Set<PaymentNumberSequence>();
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
+    public DbSet<JournalLine> JournalLines => Set<JournalLine>();
+    public DbSet<JournalEntryNumberSequence> JournalEntryNumberSequences => Set<JournalEntryNumberSequence>();
+    public DbSet<FinancialAuditLog> FinancialAuditLogs => Set<FinancialAuditLog>();
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        if (_currentUser != null)
+        var systemOrgId = _systemTenantContext?.ScopedOrganizationId;
+        if (_currentUser != null || systemOrgId.HasValue)
         {
-            if (_currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue)
+            Guid? resolvedOrgId = _currentUser is { IsAuthenticated: true }
+                ? _currentUser.OrganizationId
+                : systemOrgId;
+
+            if (resolvedOrgId.HasValue)
             {
-                var currentOrgId = _currentUser.OrganizationId.Value;
+                var currentOrgId = resolvedOrgId.Value;
 
                 foreach (var entry in ChangeTracker.Entries<IOrganizationScoped>())
                 {
@@ -200,6 +280,73 @@ public class ApplicationDbContext :
                 if (originalParentStatus.HasValue && originalParentStatus.Value != InvoiceStatus.Draft)
                 {
                     throw new InvalidOperationException("Invoice lines cannot be modified or deleted after the invoice has been issued.");
+                }
+            }
+        }
+
+        foreach (var paymentEntry in ChangeTracker.Entries<Payment>())
+        {
+            if (paymentEntry.State == EntityState.Deleted)
+            {
+                throw new InvalidOperationException("Payments cannot be deleted from financial history.");
+            }
+        }
+
+        foreach (var allocationEntry in ChangeTracker.Entries<PaymentAllocation>())
+        {
+            if (allocationEntry.State == EntityState.Deleted)
+            {
+                throw new InvalidOperationException("Payment allocations are immutable financial records; reverse them instead of deleting.");
+            }
+        }
+
+        foreach (var refundEntry in ChangeTracker.Entries<Refund>())
+        {
+            if (refundEntry.State == EntityState.Deleted)
+            {
+                throw new InvalidOperationException("Refunds cannot be deleted from financial history.");
+            }
+        }
+
+        foreach (var auditEntry in ChangeTracker.Entries<FinancialAuditLog>())
+        {
+            if (auditEntry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                throw new InvalidOperationException("Financial audit logs are immutable and cannot be modified or deleted.");
+            }
+        }
+
+        foreach (var jeEntry in ChangeTracker.Entries<JournalEntry>())
+        {
+            if (jeEntry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                var originalStatus = (LedgerEntryStatus)jeEntry.Property(nameof(JournalEntry.Status)).OriginalValue!;
+                if (originalStatus == LedgerEntryStatus.Posted)
+                {
+                    throw new InvalidOperationException("Posted journal entries are immutable and cannot be modified or deleted.");
+                }
+            }
+        }
+
+        foreach (var jlEntry in ChangeTracker.Entries<JournalLine>())
+        {
+            if (jlEntry.State is EntityState.Modified or EntityState.Deleted)
+            {
+                var trackedParent = ChangeTracker.Entries<JournalEntry>()
+                    .FirstOrDefault(e => e.Entity.Id == jlEntry.Entity.JournalEntryId);
+
+                LedgerEntryStatus? originalParentStatus = trackedParent is not null
+                    ? (LedgerEntryStatus)trackedParent.Property(nameof(JournalEntry.Status)).OriginalValue!
+                    : await JournalEntries
+                        .IgnoreQueryFilters()
+                        .AsNoTracking()
+                        .Where(j => j.Id == jlEntry.Entity.JournalEntryId)
+                        .Select(j => (LedgerEntryStatus?)j.Status)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                if (originalParentStatus == LedgerEntryStatus.Posted)
+                {
+                    throw new InvalidOperationException("Journal lines belonging to a posted entry are immutable and cannot be modified or deleted.");
                 }
             }
         }
