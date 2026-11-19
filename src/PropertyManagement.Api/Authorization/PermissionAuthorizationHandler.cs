@@ -84,7 +84,17 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Organizations.ManageMembers,
                 Permissions.Invitations.Read,
                 Permissions.Invitations.Create,
-                Permissions.Invitations.Revoke
+                Permissions.Invitations.Revoke,
+                Permissions.Payments.Read,
+                Permissions.Payments.Create,
+                Permissions.Payments.Confirm,
+                Permissions.Payments.Cancel,
+                Permissions.Payments.Allocate,
+                Permissions.Payments.ReverseAllocation,
+                Permissions.Payments.Refund,
+                Permissions.Payments.Reconcile,
+                Permissions.Ledger.Read,
+                Permissions.Audit.Read
             ],
             MembershipRole.PropertyManager =>
             [
@@ -119,7 +129,13 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Charges.Create,
                 Permissions.Charges.Void,
                 Permissions.Organizations.Read,
-                Permissions.Invitations.Read
+                Permissions.Invitations.Read,
+                Permissions.Payments.Read,
+                Permissions.Payments.Create,
+                Permissions.Payments.Confirm,
+                Permissions.Payments.Cancel,
+                Permissions.Payments.Allocate,
+                Permissions.Ledger.Read
             ],
             MembershipRole.Staff =>
             [
@@ -130,7 +146,8 @@ public sealed class PermissionAuthorizationHandler : AuthorizationHandler<Permis
                 Permissions.Billing.Preview,
                 Permissions.Invoices.Read,
                 Permissions.Charges.Read,
-                Permissions.Organizations.Read
+                Permissions.Organizations.Read,
+                Permissions.Payments.Read
             ],
             _ => []
         };

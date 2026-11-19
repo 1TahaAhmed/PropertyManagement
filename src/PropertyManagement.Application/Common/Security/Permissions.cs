@@ -77,4 +77,26 @@ public static partial class Permissions
         public const string Create = "Permissions.Invitations.Create";
         public const string Revoke = "Permissions.Invitations.Revoke";
     }
+
+    public static class Payments
+    {
+        public const string Read = "Permissions.Payments.Read";
+        public const string Create = "Permissions.Payments.Create";
+        public const string Confirm = "Permissions.Payments.Confirm";
+        public const string Cancel = "Permissions.Payments.Cancel";
+        public const string Allocate = "Permissions.Payments.Allocate";
+        public const string ReverseAllocation = "Permissions.Payments.ReverseAllocation";
+        public const string Refund = "Permissions.Payments.Refund";
+        public const string Reconcile = "Permissions.Payments.Reconcile";
+    }
+
+    public static class Ledger
+    {
+        public const string Read = "Permissions.Ledger.Read";
+    }
+
+    public static class Audit
+    {
+        public const string Read = "Permissions.Audit.Read";
+    }
 }

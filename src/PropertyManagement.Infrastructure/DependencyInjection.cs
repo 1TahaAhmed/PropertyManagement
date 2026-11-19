@@ -27,6 +27,7 @@ using PropertyManagement.Infrastructure.Events;
 using PropertyManagement.Infrastructure.Common.Time;
 using PropertyManagement.Infrastructure.Email;
 using PropertyManagement.Infrastructure.Identity;
+using PropertyManagement.Infrastructure.Payments;
 using PropertyManagement.Infrastructure.Persistence;
 using PropertyManagement.Infrastructure.Persistence.Repositories;
 using PropertyManagement.Infrastructure.Persistence.Repositories.Audit;
@@ -253,6 +254,17 @@ namespace PropertyManagement.Infrastructure
             services.AddScoped<ILedgerRepository, LedgerRepository>();
             services.AddScoped<IJournalEntryNumberGenerator, JournalEntryNumberGenerator>();
             services.AddScoped<IFinancialAuditLogRepository, FinancialAuditLogRepository>();
+
+            services.Configure<PaymentProviderOptions>(configuration.GetSection(PaymentProviderOptions.SectionName));
+            services.AddSingleton<ManualPaymentProvider>();
+            services.AddSingleton<IPaymentProvider>(sp => sp.GetRequiredService<ManualPaymentProvider>());
+            services.AddSingleton<SimulatedPaymentProvider>();
+            services.AddSingleton<IPaymentProvider>(sp => sp.GetRequiredService<SimulatedPaymentProvider>());
+            services.AddHttpClient<StripePaymentProvider>();
+            services.AddTransient<IPaymentProvider>(sp => sp.GetRequiredService<StripePaymentProvider>());
+            services.AddHttpClient<PaymobPaymentProvider>();
+            services.AddTransient<IPaymentProvider>(sp => sp.GetRequiredService<PaymobPaymentProvider>());
+            services.AddScoped<IPaymentProviderFactory, PaymentProviderFactory>();
             services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<ApplicationDbContext>());
 
             return services;

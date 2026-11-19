@@ -91,12 +91,16 @@ public class ApplicationDbContext :
         builder.Entity<InvoiceLine>().HasQueryFilter(l =>
             l.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                 ? _currentUser.OrganizationId.Value
-                : Guid.Empty));
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
 
         builder.Entity<InvoiceAdjustment>().HasQueryFilter(a =>
             a.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
                 ? _currentUser.OrganizationId.Value
-                : Guid.Empty));
+                : (_systemTenantContext != null && _systemTenantContext.ScopedOrganizationId.HasValue
+                    ? _systemTenantContext.ScopedOrganizationId.Value
+                    : Guid.Empty)));
 
         builder.Entity<Charge>().HasQueryFilter(c =>
             c.OrganizationId == (_currentUser != null && _currentUser.IsAuthenticated && _currentUser.OrganizationId.HasValue
