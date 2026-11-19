@@ -359,7 +359,7 @@ function DataPage({ title, subtitle, endpoint, kind }: { title: string; subtitle
       {error && <ErrorPanel message={error} />}
       <DataTable columns={columns[kind] || []} items={visible} loading={loading} />
       {!loading && !error && items.length > 0 && <div className="table-bottom"><span>Showing <strong>{visible.length}</strong> of <strong>{total}</strong> records</span>{items.length < total && <button className="outline-button" onClick={loadMore} disabled={loadingMore}>{loadingMore ? "Loading…" : "Load more"} <ChevronDown size={15} /></button>}</div>}
-      {!loading && !error && items.length === 0 && <EmptyState title="Nothing to display yet" text="The API returned no records for this organization." />}
+      {!loading && !error && items.length === 0 && <EmptyState title="Nothing to display yet" description="The API returned no records for this organization." />}
     </section>
   );
 }
@@ -412,7 +412,7 @@ function UnitsPage() {
       </div>
       {error && <ErrorPanel message={error} />}
       <DataTable columns={unitColumns} items={items} loading={loading || loadingProperties} />
-      {!loading && !loadingProperties && items.length === 0 && !error && <EmptyState title="No units found" text="This property has no units returned by the API." />}
+      {!loading && !loadingProperties && items.length === 0 && !error && <EmptyState title="No units found" description="This property has no units returned by the API." />}
     </section>
   );
 }
@@ -540,3 +540,5 @@ function ErrorPanel({ message }: { message: string }) {
 function EmptyState({ title, description }: { title: string; description: string }) {
   return <div className="empty-state"><div className="empty-icon"><FileBarChart2 size={24} /></div><h3>{title}</h3><p>{description}</p></div>;
 }
+
+export default App;
