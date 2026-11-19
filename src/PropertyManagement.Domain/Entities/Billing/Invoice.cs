@@ -314,6 +314,43 @@ public sealed class Invoice : IOrganizationScoped, IHasDomainEvents
         UpdatedAtUtc = utcNow;
     }
 
+    public void ReversePaymentAllocation(decimal amount, DateOnly asOfDate, DateTime utcNow)
+    {
+        if (Status is not (InvoiceStatus.PartiallyPaid or InvoiceStatus.Paid))
+        {
+            throw new InvalidOperationException($"Cannot reverse payment allocation for invoice in '{Status}' status.");
+        }
+
+        var roundedAmount = MoneyRounding.Round(amount);
+        if (roundedAmount <= 0m)
+        {
+            throw new ArgumentException("Reversal amount must be greater than zero.", nameof(amount));
+        }
+
+        if (roundedAmount > AmountPaid)
+        {
+            throw new InvalidOperationException($"Reversal amount ({roundedAmount:0.00}) exceeds AmountPaid ({AmountPaid:0.00}).");
+        }
+
+        AmountPaid = MoneyRounding.Round(AmountPaid - roundedAmount);
+        RecalculateTotals();
+
+        if (BalanceDue == 0m)
+        {
+            Status = InvoiceStatus.Paid;
+        }
+        else if (AmountPaid > 0m)
+        {
+            Status = InvoiceStatus.PartiallyPaid;
+        }
+        else
+        {
+            Status = asOfDate > DueDate ? InvoiceStatus.Overdue : InvoiceStatus.Issued;
+        }
+
+        UpdatedAtUtc = utcNow;
+    }
+
     public void Void(string reason, DateTime utcNow)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reason, nameof(reason));

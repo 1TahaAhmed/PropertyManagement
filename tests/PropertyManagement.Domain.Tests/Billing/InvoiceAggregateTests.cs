@@ -172,4 +172,25 @@ public sealed class InvoiceAggregateTests
         Assert.Equal(InvoiceStatus.Paid, invoice.Status);
         Assert.Throws<InvalidOperationException>(() => invoice.Void("Cannot void paid", FixedNow.AddDays(2)));
     }
+
+    [Fact]
+    public void ReversePaymentAllocation_ShouldRestorePartialOrOverdueOrIssuedStatus()
+    {
+        var invoice = CreateSampleDraftInvoice(rent: 5000m);
+        invoice.Issue("INV-2026-000008", new DateOnly(2026, 3, 1), FixedNow);
+        invoice.RecordPaymentAllocation(5000m, FixedNow.AddDays(1));
+        Assert.Equal(InvoiceStatus.Paid, invoice.Status);
+
+        // Partial reversal -> PartiallyPaid
+        invoice.ReversePaymentAllocation(2000m, new DateOnly(2026, 3, 3), FixedNow.AddDays(2));
+        Assert.Equal(3000m, invoice.AmountPaid);
+        Assert.Equal(2000m, invoice.BalanceDue);
+        Assert.Equal(InvoiceStatus.PartiallyPaid, invoice.Status);
+
+        // Full reversal after due date -> Overdue
+        invoice.ReversePaymentAllocation(3000m, new DateOnly(2026, 3, 10), FixedNow.AddDays(9));
+        Assert.Equal(0m, invoice.AmountPaid);
+        Assert.Equal(5000m, invoice.BalanceDue);
+        Assert.Equal(InvoiceStatus.Overdue, invoice.Status);
+    }
 }
