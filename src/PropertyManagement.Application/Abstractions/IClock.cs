@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace PropertyManagement.Application.Abstractions
+﻿namespace PropertyManagement.Application.Abstractions
 {
     public interface IClock
     {
