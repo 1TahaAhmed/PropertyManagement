@@ -34,7 +34,6 @@ public class TenantIsolationIntegrationTests
         var companyA = Guid.NewGuid();
         var companyB = Guid.NewGuid();
 
-        // 1. Seed data using a bypassed context
         await using (var seedContext = CreateDbContext(dbName, null))
         {
             var propA = Property.Create(companyA, "Tower A", "Address A", PropertyType.Commercial, DateTime.UtcNow);
@@ -44,7 +43,6 @@ public class TenantIsolationIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        // 2. Query as Company A user
         var userA = new TestCurrentUser
         {
             UserId = Guid.NewGuid(),
@@ -76,7 +74,6 @@ public class TenantIsolationIntegrationTests
             await seedContext.SaveChangesAsync();
         }
 
-        // 2. Query as user without organization context (e.g., token without organization_id claim)
         var userWithoutOrg = new TestCurrentUser
         {
             UserId = Guid.NewGuid(),
@@ -88,7 +85,6 @@ public class TenantIsolationIntegrationTests
         {
             var results = await unScopedContext.Properties.ToListAsync();
 
-            // Security assertion: Must FAIL-CLOSED (return 0 rows, never leak)
             Assert.Empty(results);
         }
     }
@@ -109,7 +105,6 @@ public class TenantIsolationIntegrationTests
 
         await using var contextA = CreateDbContext(dbName, userA);
 
-        // Attacker from Company A tries to create property under Company B's ID
         var maliciousProperty = Property.Create(companyB, "Hacked Tower", "Address X", PropertyType.Commercial, DateTime.UtcNow);
 
         await contextA.Properties.AddAsync(maliciousProperty);
