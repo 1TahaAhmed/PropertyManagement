@@ -7,3 +7,7 @@ namespace PropertyManagement.Infrastructure.Common.Time
         public DateTime UtcNow => DateTime.UtcNow;
     }
 }
+
+
+
+

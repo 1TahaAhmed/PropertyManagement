@@ -1,4 +1,4 @@
-namespace PropertyManagement.Application.Abstractions.Security;
+ namespace PropertyManagement.Application.Abstractions.Security;
 
 public interface ICurrentUser
 {
