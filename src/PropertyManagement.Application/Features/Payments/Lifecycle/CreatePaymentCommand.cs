@@ -146,7 +146,6 @@ public sealed class CreatePaymentCommandHandler(
         await using var transaction = await unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
         await paymentRepository.AcquireResidentLockAsync(request.ResidentId, request.OrganizationId, cancellationToken);
 
-        // Re-check idempotency inside lock against concurrent duplicate submissions
         if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
         {
             var existingUnderLock = await paymentRepository.GetByIdempotencyKeyAsync(

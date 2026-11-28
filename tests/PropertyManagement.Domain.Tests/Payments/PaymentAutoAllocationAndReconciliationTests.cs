@@ -62,8 +62,9 @@ public sealed class PaymentAutoAllocationAndReconciliationTests
         Assert.Equal(7000m, plan.PlannedAllocations[1].Amount);
         Assert.Equal(12000m, plan.TotalAllocated);
         Assert.Equal(3000m, plan.RemainingUnapplied);
-    }
 
+    }
+    
     [Fact]
     public void RejectOverpaymentPolicy_ShouldThrowWhenBalanceRemainsUnapplied()
     {

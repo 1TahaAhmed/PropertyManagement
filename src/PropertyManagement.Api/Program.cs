@@ -103,5 +103,3 @@ app.MapHealthChecks("/health").AllowAnonymous();
 app.MapControllers();
 
 app.Run();
-
-public partial class Program;
